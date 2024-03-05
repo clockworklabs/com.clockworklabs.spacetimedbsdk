@@ -5,6 +5,7 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Google.Protobuf;
 
 namespace SpacetimeDB
 {
@@ -153,11 +154,11 @@ namespace SpacetimeDB
         /// before we start another one. This function is also thread safe, just in case.
         /// </summary>
         /// <param name="message">The message to send</param>
-        public void Send(byte[] message)
+        public void Send(ClientApi.Message message)
         {
             lock (messageSendQueue)
             {
-                messageSendQueue.Enqueue(message);
+                messageSendQueue.Enqueue(message.ToByteArray());
                 senderTask ??= Task.Run(ProcessSendQueue);
             }
         }
@@ -181,7 +182,7 @@ namespace SpacetimeDB
                         }
                     }
 
-                    await Ws!.SendAsync(message, WebSocketMessageType.Text, true, CancellationToken.None);
+                    await Ws!.SendAsync(message, WebSocketMessageType.Binary, true, CancellationToken.None);
                 }
             }
             catch (Exception e)

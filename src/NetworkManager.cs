@@ -21,24 +21,11 @@ namespace SpacetimeDB
         public static string GetTokenKey()
         {
             var key = "spacetimedb.identity_token";
-#if UNITY_EDITOR
+    #if UNITY_EDITOR
             // Different editors need different keys
             key += $" - {Application.dataPath}";
-#endif
+    #endif
             return key;
-        }
-    }
-
-    public class NetworkManager : MonoBehaviour
-    {
-        private void OnDestroy()
-        {
-            SpacetimeDBClient.instance.Close();
-        }
-
-        private void Update()
-        {
-            SpacetimeDBClient.instance.Update();
         }
     }
 }

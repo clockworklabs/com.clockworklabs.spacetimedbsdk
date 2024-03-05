@@ -1,3 +1,5 @@
+#nullable disable
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -6,35 +8,24 @@ using System.IO.Compression;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Reflection;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ClientApi;
-using Newtonsoft.Json;
-using SpacetimeDB.SATS;
+using SpacetimeDB.BSATN;
 using Thread = System.Threading.Thread;
+using Google.Protobuf;
+using Event = ClientApi.Event;
 
 namespace SpacetimeDB
 {
-    public class SpacetimeDBClient
+    public abstract class SpacetimeDBClientBase
     {
-        public class ReducerCallRequest
-        {
-            public string fn;
-            public object[] args;
-        }
-
-        public class SubscriptionRequest
-        {
-            public string subscriptionQuery;
-        }
-
         struct DbValue
         {
-            public object value;
+            public IDatabaseTable value;
             public byte[] bytes;
 
-            public DbValue(object value, byte[] bytes)
+            public DbValue(IDatabaseTable value, byte[] bytes)
             {
                 this.value = value;
                 this.bytes = bytes;
@@ -43,7 +34,7 @@ namespace SpacetimeDB
 
         struct DbOp
         {
-            public ClientCache.TableCache table;
+            public ClientCache.ITableCache table;
             public DbValue? delete;
             public DbValue? insert;
         }
@@ -97,46 +88,17 @@ namespace SpacetimeDB
 
         private SpacetimeDB.WebSocket webSocket;
         private bool connectionClosed;
-        public static ClientCache clientDB;
+        public readonly ClientCache clientDB = new();
 
-        private static Dictionary<string, Func<ClientApi.Event, bool>> reducerEventCache = new();
+        protected abstract ReducerEventBase ReducerEventFromDbEvent(ClientApi.Event dbEvent);
 
-        private static Dictionary<string, Action<ClientApi.Event>> deserializeEventCache = new();
-
-        private static Dictionary<Guid, TaskCompletionSource<OneOffQueryResponse>> waitingOneOffQueries = new();
+        private readonly Dictionary<Guid, TaskCompletionSource<OneOffQueryResponse>> waitingOneOffQueries = new();
 
         private bool isClosing;
-        private Thread networkMessageProcessThread;
-        private Thread stateDiffProcessThread;
+        private readonly Thread networkMessageProcessThread;
+        private readonly Thread stateDiffProcessThread;
 
-        public static readonly SpacetimeDBClient instance = new();
-
-        public Type FindReducerType()
-        {
-            // Get all loaded assemblies
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            // Iterate over each assembly and search for the type
-            foreach (Assembly assembly in assemblies)
-            {
-                // Get all types in the assembly
-                Type[] types = assembly.GetTypes();
-
-                // Search for the class with the attribute ReducerClass
-                foreach (Type type in types)
-                {
-                    if (type.GetCustomAttribute<ReducerClassAttribute>() != null)
-                    {
-                        return type;
-                    }
-                }
-            }
-
-            // If the type is not found in any assembly, return null or throw an exception
-            return null;
-        }
-
-        protected SpacetimeDBClient()
+        protected SpacetimeDBClientBase()
         {
             var options = new SpacetimeDB.ConnectOptions
             {
@@ -150,56 +112,6 @@ namespace SpacetimeDB
             webSocket.OnConnect += () => onConnect?.Invoke();
             webSocket.OnConnectError += (a, b) => onConnectError?.Invoke(a, b);
             webSocket.OnSendError += a => onSendError?.Invoke(a);
-
-            clientDB = new ClientCache();
-
-            var type = typeof(IDatabaseTable);
-            var types = AppDomain.CurrentDomain.GetAssemblies().SelectMany(s => s.GetTypes())
-                .Where(p => type.IsAssignableFrom(p));
-            foreach (var @class in types)
-            {
-                if (!@class.IsClass)
-                {
-                    continue;
-                }
-
-                var algebraicTypeFunc = @class.GetMethod("GetAlgebraicType", BindingFlags.Static | BindingFlags.Public);
-                var algebraicValue = algebraicTypeFunc!.Invoke(null, null) as AlgebraicType;
-                var conversionFunc = @class.GetMethods()
-                    .FirstOrDefault(a => a.Name == "op_Explicit" &&
-                                         a.GetParameters().Length > 0 &&
-                                         a.GetParameters()[0].ParameterType ==
-                                         typeof(AlgebraicValue));
-                clientDB.AddTable(@class, algebraicValue,
-                    a => { return conversionFunc!.Invoke(null, new object[] { a }); });
-            }
-
-            var reducerType = FindReducerType();
-            if (reducerType != null)
-            {
-                // cache all our reducer events by their function name
-                foreach (var methodInfo in reducerType.GetMethods())
-                {
-                    if (methodInfo.GetCustomAttribute<ReducerCallbackAttribute>() is
-                        { } reducerEvent)
-                    {
-                        reducerEventCache.Add(reducerEvent.FunctionName,
-                            (Func<ClientApi.Event, bool>)methodInfo.CreateDelegate(
-                                typeof(Func<ClientApi.Event, bool>)));
-                    }
-
-                    if (methodInfo.GetCustomAttribute<DeserializeEventAttribute>() is
-                        { } deserializeEvent)
-                    {
-                        deserializeEventCache.Add(deserializeEvent.FunctionName,
-                            (Action<ClientApi.Event>)methodInfo.CreateDelegate(typeof(Action<ClientApi.Event>)));
-                    }
-                }
-            }
-            else
-            {
-                Logger.LogError($"Could not find reducer type. Have you run spacetime generate?");
-            }
 
             _preProcessCancellationToken = _preProcessCancellationTokenSource.Token;
             networkMessageProcessThread = new Thread(PreProcessMessages);
@@ -223,8 +135,8 @@ namespace SpacetimeDB
         private readonly BlockingCollection<PreProcessedMessage> _preProcessedNetworkMessages =
             new BlockingCollection<PreProcessedMessage>(new ConcurrentQueue<PreProcessedMessage>());
 
-        private CancellationTokenSource _preProcessCancellationTokenSource = new CancellationTokenSource();
-        private CancellationToken _preProcessCancellationToken;
+        private readonly CancellationTokenSource _preProcessCancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationToken _preProcessCancellationToken;
 
         void PreProcessMessages()
         {
@@ -249,8 +161,6 @@ namespace SpacetimeDB
                 using var compressedStream = new MemoryStream(bytes);
                 using var decompressedStream = new BrotliStream(compressedStream, CompressionMode.Decompress);
                 var message = Message.Parser.ParseFrom(decompressedStream);
-                using var stream = new MemoryStream();
-                using var reader = new BinaryReader(stream);
 
                 // This is all of the inserts
                 Dictionary<System.Type, HashSet<byte[]>> subscriptionInserts = null;
@@ -261,18 +171,16 @@ namespace SpacetimeDB
                 {
                     if (!subscriptionInserts.TryGetValue(tableType, out var hashSet))
                     {
-                        hashSet = new HashSet<byte[]>(capacity: tableSize, comparer: new ByteArrayComparer());
+                        hashSet = new HashSet<byte[]>(capacity: tableSize, comparer: ByteArrayComparer.Instance);
                         subscriptionInserts[tableType] = hashSet;
                     }
 
                     return hashSet;
                 }
 
-                SubscriptionUpdate subscriptionUpdate = null;
-                switch (message.TypeCase)
+                switch (message)
                 {
-                    case ClientApi.Message.TypeOneofCase.SubscriptionUpdate:
-                        subscriptionUpdate = message.SubscriptionUpdate;
+                    case { TypeCase: Message.TypeOneofCase.SubscriptionUpdate, SubscriptionUpdate: var subscriptionUpdate }:
                         subscriptionInserts = new(capacity: subscriptionUpdate.TableUpdates.Sum(a => a.TableRowOperations.Count));
                         // First apply all of the state
                         foreach (var update in subscriptionUpdate.TableUpdates)
@@ -303,17 +211,8 @@ namespace SpacetimeDB
                                     continue;
                                 }
 
-                                stream.Position = 0;
-                                stream.Write(rowBytes, 0, rowBytes.Length);
-                                stream.Position = 0;
-                                stream.SetLength(rowBytes.Length);
-                                var deserializedRow = AlgebraicValue.Deserialize(table.RowSchema, reader);
-                                if (deserializedRow == null)
-                                {
-                                    throw new Exception("Failed to deserialize row");
-                                }
 
-                                table.SetAndForgetDecodedValue(deserializedRow, out var obj);
+                                var obj = table.SetAndForgetDecodedValue(row.Row);
                                 var op = new DbOp
                                 {
                                     table = table,
@@ -326,10 +225,9 @@ namespace SpacetimeDB
 
                         break;
 
-                    case ClientApi.Message.TypeOneofCase.TransactionUpdate:
-                        subscriptionUpdate = message.TransactionUpdate.SubscriptionUpdate;
+                    case { TypeCase: Message.TypeOneofCase.TransactionUpdate, TransactionUpdate: var transactionUpdate }:
                         // First apply all of the state
-                        foreach (var update in subscriptionUpdate.TableUpdates)
+                        foreach (var update in transactionUpdate.SubscriptionUpdate.TableUpdates)
                         {
                             var tableName = update.TableName;
                             var table = clientDB.GetTable(tableName);
@@ -342,18 +240,8 @@ namespace SpacetimeDB
                             foreach (var row in update.TableRowOperations)
                             {
                                 var rowBytes = row.Row.ToByteArray();
-                                stream.Position = 0;
-                                stream.Write(rowBytes, 0, rowBytes.Length);
-                                stream.Position = 0;
-                                stream.SetLength(rowBytes.Length);
-                                var deserializedRow = AlgebraicValue.Deserialize(table.RowSchema, reader);
-                                if (deserializedRow == null)
-                                {
-                                    throw new Exception("Failed to deserialize row");
-                                }
 
-                                table.SetAndForgetDecodedValue(deserializedRow, out var obj);
-                                var primaryKeyValue = table.GetPrimaryKeyValue(obj);
+                                var obj = table.SetAndForgetDecodedValue(row.Row);
 
                                 var op = new DbOp { table = table };
 
@@ -368,11 +256,11 @@ namespace SpacetimeDB
                                     op.delete = dbValue;
                                 }
 
-                                if (primaryKeyValue != null)
+                                if (obj is IDatabaseTableWithPrimaryKey objWithPk)
                                 {
                                     // Compound key that we use for lookup.
                                     // Consists of type of the table (for faster comparison that string names) + actual primary key of the row.
-                                    var key = (table.ClientTableType, primaryKeyValue);
+                                    var key = (table.ClientTableType, objWithPk.GetPrimaryKeyValue());
 
                                     if (primaryKeyChanges.TryGetValue(key, out var oldOp))
                                     {
@@ -408,23 +296,12 @@ namespace SpacetimeDB
 
                         // Convert the generic event arguments in to a domain specific event object, this gets fed back into
                         // the message.TransactionUpdate.Event.FunctionCall.CallInfo field.
-                        if (message.TypeCase == Message.TypeOneofCase.TransactionUpdate &&
-                            deserializeEventCache.TryGetValue(message.TransactionUpdate.Event.FunctionCall.Reducer,
-                                out var deserializer))
-                        {
-                            deserializer.Invoke(message.TransactionUpdate.Event);
-                        }
+                        var dbEvent = message.TransactionUpdate.Event;
+                        dbEvent.FunctionCall.CallInfo = ReducerEventFromDbEvent(dbEvent);
 
                         break;
-                    case ClientApi.Message.TypeOneofCase.IdentityToken:
-                        break;
-                    case ClientApi.Message.TypeOneofCase.Event:
-                        break;
-                    case ClientApi.Message.TypeOneofCase.OneOffQuery:
-                        break;
-                    case ClientApi.Message.TypeOneofCase.OneOffQueryResponse:
+                    case { TypeCase: Message.TypeOneofCase.OneOffQueryResponse, OneOffQueryResponse: var resp }:
                         /// This case does NOT produce a list of DBOps, because it should not modify the client cache state!
-                        var resp = message.OneOffQueryResponse;
                         var messageId = new Guid(resp.MessageId.Span);
 
                         if (!waitingOneOffQueries.Remove(messageId, out var resultSource))
@@ -451,9 +328,9 @@ namespace SpacetimeDB
 
         // The message that has been preprocessed and has had its state diff calculated
 
-        private BlockingCollection<ProcessedMessage> _stateDiffMessages = new BlockingCollection<ProcessedMessage>();
-        private CancellationTokenSource _stateDiffCancellationTokenSource = new CancellationTokenSource();
-        private CancellationToken _stateDiffCancellationToken;
+        private readonly BlockingCollection<ProcessedMessage> _stateDiffMessages = new BlockingCollection<ProcessedMessage>();
+        private readonly CancellationTokenSource _stateDiffCancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationToken _stateDiffCancellationToken;
 
         void ExecuteStateDiff()
         {
@@ -487,7 +364,7 @@ namespace SpacetimeDB
                             continue;
                         }
 
-                        foreach (var (rowBytes, oldValue) in table.entries.Where(kv => !hashSet.Contains(kv.Key)))
+                        foreach (var (rowBytes, oldValue) in table.Where(kv => !hashSet.Contains(kv.Key)))
                         {
                             dbOps.Add(new DbOp
                             {
@@ -551,10 +428,9 @@ namespace SpacetimeDB
             });
         }
 
-        private void OnMessageProcessCompleteUpdate(Message message, List<DbOp> dbOps)
-        {
-            var transactionEvent = message.TransactionUpdate?.Event!;
 
+        private void OnMessageProcessCompleteUpdate(Event transactionEvent, List<DbOp> dbOps)
+        {
             // First trigger OnBeforeDelete
             foreach (var update in dbOps)
             {
@@ -562,7 +438,7 @@ namespace SpacetimeDB
                 {
                     try
                     {
-                        update.table.BeforeDeleteCallback?.Invoke(oldValue, transactionEvent);
+                        oldValue.OnBeforeDeleteEvent(transactionEvent);
                     }
                     catch (Exception e)
                     {
@@ -581,7 +457,7 @@ namespace SpacetimeDB
                 {
                     if (update.table.DeleteEntry(delete.bytes))
                     {
-                        update.table.InternalValueDeletedCallback(delete.value);
+                        delete.value.InternalOnValueDeleted();
                     }
                     else
                     {
@@ -594,7 +470,7 @@ namespace SpacetimeDB
                 {
                     if (update.table.InsertEntry(insert.bytes, insert.value))
                     {
-                        update.table.InternalValueInsertedCallback(insert.value);
+                        insert.value.InternalOnValueInserted();
                     }
                     else
                     {
@@ -612,15 +488,20 @@ namespace SpacetimeDB
                     switch (dbOp)
                     {
                         case { insert: { value: var newValue }, delete: { value: var oldValue } }:
-                            dbOp.table.UpdateCallback?.Invoke(oldValue, newValue, transactionEvent);
+                        {
+                            // If we matched an update, these values must have primary keys.
+                            var newValue_ = (IDatabaseTableWithPrimaryKey)newValue;
+                            var oldValue_ = (IDatabaseTableWithPrimaryKey)oldValue;
+                            oldValue_.OnUpdateEvent(newValue_, transactionEvent);
                             break;
+                        }
 
                         case { insert: { value: var newValue } }:
-                            dbOp.table.InsertCallback?.Invoke(newValue, transactionEvent);
+                            newValue.OnInsertEvent(transactionEvent);
                             break;
 
                         case { delete: { value: var oldValue } }:
-                            dbOp.table.DeleteCallback?.Invoke(oldValue, transactionEvent);
+                            oldValue.OnDeleteEvent(transactionEvent);
                             break;
                     }
                 }
@@ -633,11 +514,11 @@ namespace SpacetimeDB
 
         private void OnMessageProcessComplete(Message message, List<DbOp> dbOps)
         {
-            switch (message.TypeCase)
+            switch (message)
             {
-                case Message.TypeOneofCase.SubscriptionUpdate:
+                case { TypeCase: Message.TypeOneofCase.SubscriptionUpdate }:
                     onBeforeSubscriptionApplied?.Invoke();
-                    OnMessageProcessCompleteUpdate(message, dbOps);
+                    OnMessageProcessCompleteUpdate(null, dbOps);
                     try
                     {
                         onSubscriptionApplied?.Invoke();
@@ -647,11 +528,11 @@ namespace SpacetimeDB
                         Logger.LogException(e);
                     }
                     break;
-                case Message.TypeOneofCase.TransactionUpdate:
-                    OnMessageProcessCompleteUpdate(message, dbOps);
+                case { TypeCase: Message.TypeOneofCase.TransactionUpdate, TransactionUpdate: { Event: var transactionEvent } }:
+                    OnMessageProcessCompleteUpdate(transactionEvent, dbOps);
                     try
                     {
-                        onEvent?.Invoke(message.TransactionUpdate.Event);
+                        onEvent?.Invoke(transactionEvent);
                     }
                     catch (Exception e)
                     {
@@ -659,25 +540,20 @@ namespace SpacetimeDB
                     }
 
                     bool reducerFound = false;
-                    var functionName = message.TransactionUpdate.Event.FunctionCall.Reducer;
-                    if (reducerEventCache.TryGetValue(functionName, out var value))
+                    try
                     {
-                        try
-                        {
-                            reducerFound = value.Invoke(message.TransactionUpdate.Event);
-                        }
-                        catch (Exception e)
-                        {
-                            Logger.LogException(e);
-                        }
+                        reducerFound = transactionEvent.FunctionCall.CallInfo.InvokeHandler();
+                    }
+                    catch (Exception e)
+                    {
+                        Logger.LogException(e);
                     }
 
-                    if (!reducerFound && message.TransactionUpdate.Event.Status ==
-                        ClientApi.Event.Types.Status.Failed)
+                    if (!reducerFound && transactionEvent.Status == Event.Types.Status.Failed)
                     {
                         try
                         {
-                            onUnhandledReducerError?.Invoke(message.TransactionUpdate.Event.FunctionCall
+                            onUnhandledReducerError?.Invoke(transactionEvent.FunctionCall
                                 .CallInfo);
                         }
                         catch (Exception e)
@@ -685,25 +561,23 @@ namespace SpacetimeDB
                             Logger.LogException(e);
                         }
                     }
-
                     break;
-                case Message.TypeOneofCase.IdentityToken:
+                case { TypeCase: Message.TypeOneofCase.IdentityToken, IdentityToken: var identityToken }:
                     try
                     {
-                        onIdentityReceived?.Invoke(message.IdentityToken.Token,
-                            Identity.From(message.IdentityToken.Identity.ToByteArray()),
-                            (Address)Address.From(message.IdentityToken.Address.ToByteArray()));
+                        onIdentityReceived?.Invoke(identityToken.Token,
+                            Identity.From(identityToken.Identity.ToByteArray()),
+                            (Address)Address.From(identityToken.Address.ToByteArray()));
                     }
                     catch (Exception e)
                     {
                         Logger.LogException(e);
                     }
-
                     break;
-                case Message.TypeOneofCase.Event:
+                case { TypeCase: Message.TypeOneofCase.Event, Event: var event_ }:
                     try
                     {
-                        onEvent?.Invoke(message.Event);
+                        onEvent?.Invoke(event_);
                     }
                     catch (Exception e)
                     {
@@ -716,7 +590,8 @@ namespace SpacetimeDB
 
         private void OnMessageReceived(byte[] bytes) => _messageQueue.Add(bytes);
 
-        public void InternalCallReducer(string json)
+        public void InternalCallReducer<T>(T args)
+            where T : IReducerArgsBase, new()
         {
             if (!webSocket.IsConnected)
             {
@@ -724,7 +599,14 @@ namespace SpacetimeDB
                 return;
             }
 
-            webSocket.Send(Encoding.ASCII.GetBytes("{ \"call\": " + json + " }"));
+            webSocket.Send(new Message
+            {
+                FunctionCall = new FunctionCall
+                {
+                    Reducer = args.ReducerName,
+                    ArgBytes = args.ToProtoBytes(),
+                }
+            });
         }
 
         public void Subscribe(List<string> queries)
@@ -735,13 +617,14 @@ namespace SpacetimeDB
                 return;
             }
 
-            var json = JsonConvert.SerializeObject(queries);
-            // should we use UTF8 here? ASCII is fragile.
-            webSocket.Send(Encoding.ASCII.GetBytes("{ \"subscribe\": { \"query_strings\": " + json + " }}"));
+            var request = new ClientApi.Subscribe();
+            request.QueryStrings.AddRange(queries);
+            webSocket.Send(new Message { Subscribe = request });
         }
 
-        /// Usage: SpacetimeDBClient.instance.OneOffQuery<Message>("WHERE sender = \"bob\"");
-        public async Task<T[]> OneOffQuery<T>(string query) where T : IDatabaseTable
+        /// Usage: SpacetimeDBClientBase.instance.OneOffQuery<Message>("WHERE sender = \"bob\"");
+        public async Task<T[]> OneOffQuery<T>(string query)
+            where T : IDatabaseTable, IStructuralReadWrite, new()
         {
             var messageId = Guid.NewGuid();
             var type = typeof(T);
@@ -752,11 +635,12 @@ namespace SpacetimeDB
             // the best they can do is send multiple selects, which will just result in them getting no data back.
             string queryString = "SELECT * FROM " + type.Name + " " + query;
 
-            // see: SpacetimeDB\crates\core\src\client\message_handlers.rs, enum Message<'a>
-            var serializedQuery = "{ \"one_off_query\": { \"message_id\": \"" +
-                                  System.Convert.ToBase64String(messageId.ToByteArray()) +
-                                  "\", \"query_string\": " + JsonConvert.SerializeObject(queryString) + " } }";
-            webSocket.Send(Encoding.UTF8.GetBytes(serializedQuery));
+            var serializedQuery = new ClientApi.OneOffQuery
+            {
+                MessageId = UnsafeByteOperations.UnsafeWrap(messageId.ToByteArray()),
+                QueryString = queryString,
+            };
+            webSocket.Send(new Message { OneOffQuery = serializedQuery });
 
             // Suspend for an arbitrary amount of time
             var result = await resultSource.Task;
@@ -787,23 +671,7 @@ namespace SpacetimeDB
                 return LogAndThrow("Mismatched result type, expected " + type + " but got " + resultTable.TableName);
             }
 
-            T[] results = (T[])Array.CreateInstance(type, resultTable.Row.Count);
-            using var stream = new MemoryStream();
-            using var reader = new BinaryReader(stream);
-            for (int i = 0; i < results.Length; i++)
-            {
-                var rowValue = resultTable.Row[i].ToByteArray();
-                stream.Position = 0;
-                stream.Write(rowValue, 0, rowValue.Length);
-                stream.Position = 0;
-                stream.SetLength(rowValue.Length);
-
-                var deserialized = AlgebraicValue.Deserialize(cacheTable.RowSchema, reader);
-                cacheTable.SetAndForgetDecodedValue(deserialized, out var obj);
-                results[i] = (T)obj;
-            }
-
-            return results;
+            return resultTable.Row.Select(row => BSATNHelpers.FromProtoBytes<T>(row)).ToArray();
         }
 
         public bool IsConnected() => webSocket != null && webSocket.IsConnected;
