@@ -84,7 +84,7 @@ namespace SpacetimeDB
         /// Invoked when a subscription is about to start being processed. This is called even before OnBeforeDelete.
         /// </summary>
         public event Action onBeforeSubscriptionApplied;
-        
+
         /// <summary>
         /// Invoked when the local client cache is updated as a result of changes made to the subscription queries.
         /// </summary>
@@ -123,7 +123,6 @@ namespace SpacetimeDB
 
         private bool isClosing;
         private Thread networkMessageProcessThread;
-        private Thread stateDiffProcessThread;
 
         public static SpacetimeDBClient instance;
 
@@ -249,10 +248,6 @@ namespace SpacetimeDB
             _preProcessCancellationToken = _preProcessCancellationTokenSource.Token;
             networkMessageProcessThread = new Thread(PreProcessMessages);
             networkMessageProcessThread.Start();
-
-            _stateDiffCancellationToken = _stateDiffCancellationTokenSource.Token;
-            stateDiffProcessThread = new Thread(ExecuteStateDiff);
-            stateDiffProcessThread.Start();
         }
 
         struct PreProcessedMessage
@@ -316,7 +311,7 @@ namespace SpacetimeDB
                 {
                     if (!subscriptionInserts.TryGetValue(tableName, out var hashSet))
                     {
-                        hashSet = new HashSet<byte[]>(capacity:tableSize, comparer: new ClientCache.TableCache.ByteArrayComparer());
+                        hashSet = new HashSet<byte[]>(capacity: tableSize, comparer: new ClientCache.TableCache.ByteArrayComparer());
                         subscriptionInserts[tableName] = hashSet;
                     }
 
@@ -528,67 +523,48 @@ namespace SpacetimeDB
         }
 
         // The message that has been preprocessed and has had its state diff calculated
-        
+
         private BlockingCollection<ProcessedMessage> _stateDiffMessages = new BlockingCollection<ProcessedMessage>();
         private CancellationTokenSource _stateDiffCancellationTokenSource = new CancellationTokenSource();
-        private CancellationToken _stateDiffCancellationToken;
 
-        void ExecuteStateDiff()
+        // IMPORTANT: Performing state diff must happen on the main thread.
+        // Otherwise we may be comparing this message's updates with incorrect client cache values.
+        (Message, DateTime, List<DbOp>) CalculateStateDiff(PreProcessedMessage preProcessedMessage)
         {
-            while (!isClosing)
+            var message = preProcessedMessage.message;
+            var timestamp = preProcessedMessage.timestamp;
+            var dbOps = preProcessedMessage.dbOps;
+            if (message.TypeCase == Message.TypeOneofCase.SubscriptionUpdate)
             {
-                try
+                foreach (var table in clientDB.GetTables())
                 {
-                    var message = _preProcessedNetworkMessages.Take(_stateDiffCancellationToken);
-                    var (m, timestamp, events) = CalculateStateDiff(message);
-                    _stateDiffMessages.Add(new ProcessedMessage { message = m, timestamp = timestamp, dbOps = events,});
-                }
-                catch (OperationCanceledException)
-                {
-                    // Normal shutdown
-                    return;
-                }
-            }
-
-            (Message, DateTime, List<DbOp>) CalculateStateDiff(PreProcessedMessage preProcessedMessage)
-            {
-                var message = preProcessedMessage.message;
-                var timestamp = preProcessedMessage.timestamp;
-                var dbOps = preProcessedMessage.dbOps;
-                // Perform the state diff, this has to be done on the main thread because we have to touch
-                // the client cache.
-                if (message.TypeCase == Message.TypeOneofCase.SubscriptionUpdate)
-                {
-                    foreach (var table in clientDB.GetTables())
+                    foreach (var rowBytes in table.entries.Keys)
                     {
-                        foreach (var rowBytes in table.entries.Keys)
+                        if (!preProcessedMessage.inserts.TryGetValue(table.Name, out var hashSet))
                         {
-                            if (!preProcessedMessage.inserts.TryGetValue(table.Name, out var hashSet))
+                            continue;
+                        }
+
+                        if (!hashSet.Contains(rowBytes))
+                        {
+                            // This is a row that we had before, but we do not have it now.
+                            // This must have been a delete.
+                            dbOps.Add(new DbOp
                             {
-                                continue;
-                            }
-                            
-                            if (!hashSet.Contains(rowBytes))
-                            {
-                                // This is a row that we had before, but we do not have it now.
-                                // This must have been a delete.
-                                dbOps.Add(new DbOp
-                                {
-                                    table = table,
-                                    op = TableOp.Delete,
-                                    newValue = null,
-                                    oldValue = table.entries[rowBytes].Item2,
-                                    deletedBytes = rowBytes,
-                                    insertedBytes = null,
-                                    primaryKeyValue = null
-                                });
-                            }
+                                table = table,
+                                op = TableOp.Delete,
+                                newValue = null,
+                                oldValue = table.entries[rowBytes].Item2,
+                                deletedBytes = rowBytes,
+                                insertedBytes = null,
+                                primaryKeyValue = null
+                            });
                         }
                     }
                 }
-
-                return (message, timestamp, dbOps);
             }
+
+            return (message, timestamp, dbOps);
         }
 
         public void Close()
@@ -638,9 +614,10 @@ namespace SpacetimeDB
             });
         }
 
-        private void OnMessageProcessComplete(Message message, DateTime timestamp, List<DbOp> dbOps)
+        private void OnMessageProcessComplete(PreProcessedMessage preProcessedMessage)
         {
-            
+            (Message message, DateTime timestamp, List<DbOp> dbOps) = CalculateStateDiff(preProcessedMessage);
+
             switch (message.TypeCase)
             {
                 case Message.TypeOneofCase.SubscriptionUpdate:
@@ -649,24 +626,24 @@ namespace SpacetimeDB
                     stats.SubscriptionRequestTracker.FinishTrackingRequest(message.SubscriptionUpdate.RequestId);
                     break;
                 case Message.TypeOneofCase.TransactionUpdate:
-                {
-                    stats.ParseMessageTracker.InsertRequest(DateTime.UtcNow, DateTime.UtcNow - timestamp, "type=" + message.TypeCase.ToString() + ",reducer=" + message.TransactionUpdate.Event.FunctionCall.Reducer);
-                    stats.AllReducersTracker.InsertRequest(DateTime.UtcNow, TimeSpan.FromMilliseconds(message.TransactionUpdate.Event.HostExecutionDurationMicros / 1000.0d), "reducer=" + message.TransactionUpdate.Event.FunctionCall.Reducer);
-                    var callerIdentity = Identity.From(message.TransactionUpdate.Event.CallerIdentity.ToByteArray());
-                    if (callerIdentity == clientIdentity)
                     {
-                        // This was a request that we initiated
-                        if (!stats.ReducerRequestTracker.FinishTrackingRequest(message.TransactionUpdate.SubscriptionUpdate.RequestId))
+                        stats.ParseMessageTracker.InsertRequest(DateTime.UtcNow, DateTime.UtcNow - timestamp, "type=" + message.TypeCase.ToString() + ",reducer=" + message.TransactionUpdate.Event.FunctionCall.Reducer);
+                        stats.AllReducersTracker.InsertRequest(DateTime.UtcNow, TimeSpan.FromMilliseconds(message.TransactionUpdate.Event.HostExecutionDurationMicros / 1000.0d), "reducer=" + message.TransactionUpdate.Event.FunctionCall.Reducer);
+                        var callerIdentity = Identity.From(message.TransactionUpdate.Event.CallerIdentity.ToByteArray());
+                        if (callerIdentity == clientIdentity)
                         {
-                            logger.LogWarning("Failed to finish tracking reducer request: " +
-                                              message.TransactionUpdate.SubscriptionUpdate.RequestId);
+                            // This was a request that we initiated
+                            if (!stats.ReducerRequestTracker.FinishTrackingRequest(message.TransactionUpdate.SubscriptionUpdate.RequestId))
+                            {
+                                logger.LogWarning("Failed to finish tracking reducer request: " +
+                                                  message.TransactionUpdate.SubscriptionUpdate.RequestId);
+                            }
                         }
                     }
-                }
-            
+
                     break;
             }
-            
+
             switch (message.TypeCase)
             {
                 case Message.TypeOneofCase.SubscriptionUpdate:
@@ -754,7 +731,7 @@ namespace SpacetimeDB
                                     op.op = TableOp.NoChange;
                                     dbOps[i] = op;
                                 }
-                                
+
                                 if (dbOps[i].table.InsertEntry(update.insertedBytes, update.rowValue))
                                 {
                                     InternalInsertCallback(update);
@@ -1005,7 +982,7 @@ namespace SpacetimeDB
         {
             public string fn;
         }
-        
+
         public void InternalCallReducer(string json)
         {
             if (!webSocket.IsConnected)
@@ -1111,9 +1088,9 @@ namespace SpacetimeDB
         public void Update()
         {
             webSocket.Update();
-            while (_stateDiffMessages.TryTake(out var stateDiffMessage))
+            while (_preProcessedNetworkMessages.TryTake(out var preProcessedMessage))
             {
-                OnMessageProcessComplete(stateDiffMessage.message, stateDiffMessage.timestamp, stateDiffMessage.dbOps);
+                OnMessageProcessComplete(preProcessedMessage);
             }
         }
     }
