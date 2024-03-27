@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Reflection;
@@ -84,7 +85,7 @@ namespace SpacetimeDB
         /// Invoked when a subscription is about to start being processed. This is called even before OnBeforeDelete.
         /// </summary>
         public event Action onBeforeSubscriptionApplied;
-        
+
         /// <summary>
         /// Invoked when the local client cache is updated as a result of changes made to the subscription queries.
         /// </summary>
@@ -222,7 +223,7 @@ namespace SpacetimeDB
             var reducerType = FindReducerType();
             if (reducerType != null)
             {
-                // cache all our reducer events by their function name 
+                // cache all our reducer events by their function name
                 foreach (var methodInfo in reducerType.GetMethods())
                 {
                     if (methodInfo.GetCustomAttribute<ReducerCallbackAttribute>() is
@@ -292,7 +293,9 @@ namespace SpacetimeDB
             PreProcessedMessage PreProcessMessage(byte[] bytes, DateTime timestamp)
             {
                 var dbOps = new List<DbOp>();
-                var message = Message.Parser.ParseFrom(bytes);
+                using var compressedStream = new MemoryStream(bytes);
+                using var decompressedStream = new BrotliStream(compressedStream, CompressionMode.Decompress);
+                var message = Message.Parser.ParseFrom(decompressedStream);
                 using var stream = new MemoryStream();
                 using var reader = new BinaryReader(stream);
 
@@ -528,7 +531,7 @@ namespace SpacetimeDB
         }
 
         // The message that has been preprocessed and has had its state diff calculated
-        
+
         private BlockingCollection<ProcessedMessage> _stateDiffMessages = new BlockingCollection<ProcessedMessage>();
         private CancellationTokenSource _stateDiffCancellationTokenSource = new CancellationTokenSource();
         private CancellationToken _stateDiffCancellationToken;
@@ -567,7 +570,7 @@ namespace SpacetimeDB
                             {
                                 continue;
                             }
-                            
+
                             if (!hashSet.Contains(rowBytes))
                             {
                                 // This is a row that we had before, but we do not have it now.
@@ -640,7 +643,7 @@ namespace SpacetimeDB
 
         private void OnMessageProcessComplete(Message message, DateTime timestamp, List<DbOp> dbOps)
         {
-            
+
             switch (message.TypeCase)
             {
                 case Message.TypeOneofCase.SubscriptionUpdate:
@@ -663,10 +666,10 @@ namespace SpacetimeDB
                         }
                     }
                 }
-            
+
                     break;
             }
-            
+
             switch (message.TypeCase)
             {
                 case Message.TypeOneofCase.SubscriptionUpdate:
@@ -754,7 +757,7 @@ namespace SpacetimeDB
                                     op.op = TableOp.NoChange;
                                     dbOps[i] = op;
                                 }
-                                
+
                                 if (dbOps[i].table.InsertEntry(update.insertedBytes, update.rowValue))
                                 {
                                     InternalInsertCallback(update);
@@ -1005,7 +1008,7 @@ namespace SpacetimeDB
         {
             public string fn;
         }
-        
+
         public void InternalCallReducer(string json)
         {
             if (!webSocket.IsConnected)
