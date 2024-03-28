@@ -1,0 +1,39 @@
+.wrapper {
+}
+
+Label {
+    color: rgb(76, 244, 144);
+    -unity-text-align: upper-left;
+    -unity-font: url("project://database/Packages/com.clockworklabs.spacetimedbsdk/Scripts/Editor/Common/Fonts/Inter.ttf?fileID=12800000&guid=0159f667c97f22d4daf25768d0adebca&type=3#Inter");
+    -unity-font-definition: initial;
+    -unity-font-style: normal;
+}
+
+.unity-base-text-field__multiline-container {
+    color: rgb(182, 192, 207);
+}
+
+Button {
+    -unity-font: url("project://database/Packages/com.clockworklabs.spacetimedbsdk/Scripts/Editor/Common/Fonts/Inter.ttf?fileID=12800000&guid=0159f667c97f22d4daf25768d0adebca&type=3#Inter");
+    -unity-font-definition: initial;
+    transition-duration: 0.3s;
+}
+
+.unity-foldout > Toggle Label {
+    color: rgb(255, 255, 255);
+}
+
+TextField > Label {
+    font-size: 12px;
+    -unity-font-style: normal;
+}
+
+.unity-progress-bar Label {
+    color: rgb(255, 234, 48);
+    -unity-text-align: upper-center;
+    -unity-font-style: normal;
+}
+
+#unity-text-input {
+    color: rgb(182, 192, 207);
+}
