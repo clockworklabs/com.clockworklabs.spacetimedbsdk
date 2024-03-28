@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="5823d002-3466-424d-bed0-39902f55ae5e" name="Changes" comment="demo releases section">
+      <change afterPath="$PROJECT_DIR$/Scripts/Editor/Common/Components/identityFoldout.uxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Scripts/Editor/Common/Components/installCliGroupBox.uxml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/Scripts/Editor/Common/Components/serverFoldout.uxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/CommonStyles.uss" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/CommonStyles.uss.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/Components.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Scripts/Editor/Common/Components.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/Components/identityFoldout.uxml.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Scripts/Editor/Common/Components/identityFoldout.uxml.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/Components/installCliGroupBox.uxml.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Scripts/Editor/Common/Components/installCliGroupBox.uxml.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/Fonts.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/Fonts/Inter.ttf" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/Fonts/Inter.ttf.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/AddIdentityRequest.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/AddIdentityRequest.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/AddIdentityResult.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/AddIdentityResult.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/AddServerRequest.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/AddServerRequest.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/AddServerResult.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/AddServerResult.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/GetIdentitiesResult.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/GetIdentitiesResult.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/GetServersResult.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/GetServersResult.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/PublishRequest.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/PublishRequest.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/PublishServerModuleResult.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/PublishServerModuleResult.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/SpacetimeCliResult.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/SpacetimeCliResult.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/SpacetimeIdentity.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/SpacetimeIdentity.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/SpacetimeServer.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/Models/SpacetimeServer.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/SpacetimeDbCli.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/SpacetimeDbCli.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/SpacetimeDbPublisherCli.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeDbCli/SpacetimeDbPublisherCli.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeMeta.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/SpacetimeMeta.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/Sprites.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/Sprites/spacetime-logo-full.png" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/Common/Sprites/spacetime-logo-full.png.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/PublisherWindowComponents.uxml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/PublisherWindowComponents.uxml.meta" beforeDir="false" afterPath="$PROJECT_DIR$/Scripts/Editor/Common/Components/serverFoldout.uxml.meta" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/PublisherWindowStyles.uss" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/PublisherWindowStyles.uss.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts/PublisherMeta.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts/PublisherMeta.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts/PublisherWindow.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts/PublisherWindow.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts/PublisherWindowActions.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts/PublisherWindowActions.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts/PublisherWindowCallbacks.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts/PublisherWindowCallbacks.cs.meta" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts/PublisherWindowUtils.cs" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/Scripts/Editor/SpacetimePublisher/Scripts/PublisherWindowUtils.cs.meta" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="PackageJsonUpdateNotifier">
+    <dismissed value="$PROJECT_DIR$/package.json" />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="2chhvsKZMZp7PrFAiiO2VwxLfny" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ASKED_ADD_EXTERNAL_FILES": "true",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "dylan/publisher-editor-tool",
+    "last_opened_file_path": "C:/repos/work/Spacetime/SpacetimeDBUnityTutorial",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="5823d002-3466-424d-bed0-39902f55ae5e" name="Changes" comment="" />
+      <created>1708569952155</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1708569952155</updated>
+      <workItem from="1708569954082" duration="2175000" />
+      <workItem from="1708573342305" duration="12000" />
+      <workItem from="1708573563736" duration="359000" />
+      <workItem from="1709106983370" duration="49000" />
+      <workItem from="1709107079286" duration="402000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>

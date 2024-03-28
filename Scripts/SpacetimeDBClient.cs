@@ -612,6 +612,12 @@ namespace SpacetimeDB
             {
                 uri = $"ws://{uri}";
             }
+            
+            // If the user changed the addressOrName, we want to reset the token
+            if (DbAddressOrName.ResetAuthTokenOnMismatch(addressOrName))
+            {
+                logger.LogWarning($"Resetting AuthToken: New {nameof(addressOrName)}");
+            }
 
             logger.Log($"SpacetimeDBClient: Connecting to {uri} {addressOrName}");
             Task.Run(async () =>

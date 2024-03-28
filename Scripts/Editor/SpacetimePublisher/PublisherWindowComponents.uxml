@@ -1,0 +1,82 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="True">
+    <Style src="project://database/Packages/com.clockworklabs.spacetimedbsdk/Scripts/Editor/SpacetimePublisher/PublisherWindowStyles.uss?fileID=7433441132597879392&amp;guid=20c9b745db07f9e46bb5d740ec005974&amp;type=3#PublisherWindowStyles" />
+    <Style src="project://database/Packages/com.clockworklabs.spacetimedbsdk/Scripts/Editor/Common/CommonStyles.uss?fileID=7433441132597879392&amp;guid=570ec260e68b747499bb24f7d084aa3b&amp;type=3#CommonStyles" />
+    <ui:VisualElement name="root" style="flex-grow: 1; background-color: rgba(12, 12, 12, 0.78);">
+        <ui:VisualElement name="header" style="height: 66px; width: auto;">
+            <ui:Button parse-escape-sequences="true" display-tooltip-when-elided="true" name="topBannerBtn" tooltip="Open Docs" style="background-image: url(&quot;project://database/Packages/com.clockworklabs.spacetimedbsdk/Scripts/Editor/Common/Sprites/spacetime-logo-full.png?fileID=2800000&amp;guid=8e8298ff06b7be441bce715299b63855&amp;type=3#spacetime-logo-full&quot;); background-color: rgba(88, 88, 88, 0); flex-shrink: 1; flex-grow: 1; -unity-background-scale-mode: scale-to-fit;" />
+        </ui:VisualElement>
+        <ui:VisualElement name="spacer15" style="height: 15px;" />
+        <ui:ScrollView name="bodyScrollView">
+            <ui:Foldout text="&lt;b&gt;Server&lt;/b&gt;" name="serverFoldout" view-data-key="serverFoldout" value="true" style="display: flex; -unity-font-style: normal;">
+                <ui:VisualElement name="serverSelectedHoriz" style="flex-grow: 1; flex-direction: row;">
+                    <ui:DropdownField label="Selected Server" index="-1" choices="System.Collections.Generic.List`1[System.String]" name="serverSelectedDropdown" tooltip="This will change between target server hosts" style="flex-grow: 1;" />
+                    <ui:Button text="+" parse-escape-sequences="true" display-tooltip-when-elided="true" name="serverAddNewShowUiBtn" tooltip="Add new server" style="flex-grow: 0; flex-shrink: 0; -unity-font-style: bold;" />
+                </ui:VisualElement>
+                <ui:GroupBox name="serverNewGroupBox" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                    <ui:TextField picking-mode="Ignore" label="Nickname:" name="serverNicknameTxt" multiline="false" tooltip="Mapped to your server host for convenience" readonly="false" keyboard-type="ASCIICapable" />
+                    <ui:TextField picking-mode="Ignore" label="Host:" name="serverHostTxt" multiline="false" tooltip="eg: &quot;http://127.0.0.1:3000&quot; || &quot;https://testnet.spacetimedb.com&quot;" readonly="false" keyboard-type="URL" />
+                    <ui:Button text="Add Server" parse-escape-sequences="true" display-tooltip-when-elided="true" name="serverAddBtn" tooltip="Add a new, default server target" style="height: 25px; padding-bottom: 2px;" />
+                    <ui:Label tabindex="-1" text="{serverStatusLabel}" parse-escape-sequences="true" display-tooltip-when-elided="true" name="serverStatusLabel" style="color: rgb(182, 192, 207); font-size: 14px; -unity-text-align: upper-center; display: flex; white-space: normal; -unity-font-style: normal;" />
+                </ui:GroupBox>
+            </ui:Foldout>
+            <ui:VisualElement name="spacer10" style="height: 10px;" />
+            <ui:GroupBox name="installCliGroupBox">
+                <ui:ProgressBar value="5" title="Installing SpacetimeDB CLI ..." name="installCliProgressBar" tooltip="Allows for the `spacetime` CLI command" low-value="5" style="display: flex;" />
+                <ui:Label tabindex="-1" text="{installCliStatusTxt}" parse-escape-sequences="true" display-tooltip-when-elided="true" name="installCliStatusLabel" style="color: rgb(182, 192, 207); font-size: 14px; -unity-text-align: upper-center; display: flex; white-space: normal; -unity-font-style: normal;" />
+            </ui:GroupBox>
+            <ui:Foldout text="&lt;b&gt;Identity&lt;/b&gt;" name="identityFoldout" view-data-key="identityFoldout" value="true" style="display: flex; -unity-font-style: normal;">
+                <ui:VisualElement name="selectedIdentityHoriz" style="flex-grow: 1; flex-direction: row;">
+                    <ui:DropdownField label="Selected Identity" index="-1" choices="System.Collections.Generic.List`1[System.String]" name="identitySelectedDropdown" tooltip="This will change between target server hosts" style="flex-grow: 1;" />
+                    <ui:Button text="+" parse-escape-sequences="true" display-tooltip-when-elided="true" name="identityAddNewShowUiBtn" tooltip="Add new identity" style="flex-grow: 0; flex-shrink: 0; -unity-font-style: bold;" />
+                </ui:VisualElement>
+                <ui:GroupBox name="identityNewGroupBox" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                    <ui:TextField picking-mode="Ignore" label="Nickname:" name="identityNicknameTxt" multiline="false" tooltip="Mapped to your DB Address, which is mapped to your server. Identities are bound per-server (not universal)." readonly="false" keyboard-type="ASCIICapable" />
+                    <ui:TextField picking-mode="Ignore" label="Email:" name="identityEmailTxt" multiline="false" tooltip="You don&apos;t need to confirm this. Aliases(+) are ok." readonly="false" keyboard-type="EmailAddress" />
+                    <ui:Button text="Add Identity" parse-escape-sequences="true" display-tooltip-when-elided="true" name="identityAddBtn" tooltip="Create a new, default newIdentity for the selected server" style="height: 25px; padding-bottom: 2px;" />
+                    <ui:Label tabindex="-1" text="{identityStatusLabel}" parse-escape-sequences="true" display-tooltip-when-elided="true" name="identityStatusLabel" style="color: rgb(182, 192, 207); font-size: 14px; -unity-text-align: upper-center; display: flex; white-space: normal; -unity-font-style: normal;" />
+                </ui:GroupBox>
+            </ui:Foldout>
+            <ui:VisualElement name="spacer10" style="height: 10px;" />
+            <ui:Foldout text="&lt;b&gt;Publish&lt;/b&gt;" name="publishFoldout" view-data-key="PublishConfigDropdown" value="true" style="display: flex; -unity-font-style: normal;">
+                <ui:TextField picking-mode="Ignore" label="Server Module Name:" name="publishModuleNameTxt" tooltip="Choose a unique-dashified-name. Leave empty to use your project name." view-data-key="publishModuleNameTxt" />
+                <ui:GroupBox name="publishPathGroupBox" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                    <ui:TextField picking-mode="Ignore" label="Server Module Path:  " name="publishModulePathTxt" multiline="true" tooltip="Click the &quot;Browse&quot; button below or paste a path/to/your/server module" view-data-key="publishModulePathTxt">
+                        <ui:Button text="..." parse-escape-sequences="true" display-tooltip-when-elided="true" name="publishPathSetDirectoryBtn" tooltip="Browse for your server module project dir path" style="height: auto; width: 35px;" />
+                    </ui:TextField>
+                </ui:GroupBox>
+                <ui:Foldout text="Advanced" name="publishModuleDebugFoldout" view-data-key="publishModuleDebugFoldout">
+                    <ui:Toggle label="Debug Mode?" name="publishModuleDebugModeToggle" view-data-key="publishModuleDebugModeToggle" tooltip="Appends -" />
+                    <ui:Toggle label="Clear All Data?" name="publishModuleClearDataToggle" view-data-key="publishModuleClearDataToggle" tooltip="(!) This cannot be undone" />
+                </ui:Foldout>
+                <ui:VisualElement name="spacer10" style="height: 10px;" />
+                <ui:GroupBox name="publishGroupBox" style="margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                    <ui:Button text="Publish" parse-escape-sequences="true" display-tooltip-when-elided="true" name="publishBtn" tooltip="This will issue a `spacetime publish` using your module name+path" style="height: 50px; -unity-font-style: bold; font-size: 16px; display: flex;" />
+                    <ui:Button text="&lt;color=#FDBE01&gt;Cancel&lt;/color&gt;" parse-escape-sequences="true" display-tooltip-when-elided="true" name="publishCancelBtn" tooltip="Stop publishing" style="height: 50px; -unity-font-style: normal; font-size: 16px; display: flex;" />
+                    <ui:ProgressBar value="5" title="Publishing ..." name="publishInstallProgressBar" tooltip="Allows for the `spacetime` CLI command" low-value="5" style="display: flex;" />
+                    <ui:ScrollView name="publishStatusScrollView" style="max-height: 200px;">
+                        <ui:Label tabindex="-1" text="{publishStatusLabel}" parse-escape-sequences="true" display-tooltip-when-elided="true" name="publishStatusLabel" style="color: rgb(182, 192, 207); font-size: 14px; -unity-text-align: upper-center; display: flex; white-space: normal; -unity-font-style: normal;" />
+                    </ui:ScrollView>
+                </ui:GroupBox>
+            </ui:Foldout>
+            <ui:VisualElement name="spacer10" style="height: 10px;" />
+            <ui:Foldout text="&lt;b&gt;Publish Result&lt;/b&gt;" name="publishResultFoldout" view-data-key="PublishResultFoldout" value="true" style="display: flex; -unity-font-style: normal;">
+                <ui:TextField picking-mode="Ignore" label="Publish Date:" name="publishResultDateTimeTxt" multiline="false" tooltip="When was this published?" view-data-key="publishResultDateTime" readonly="true" focusable="false" />
+                <ui:TextField picking-mode="Ignore" label="Host:" name="publishResultHostTxt" multiline="false" tooltip="host:ip" view-data-key="publishResultHostTxt" readonly="true" focusable="false" />
+                <ui:TextField picking-mode="Ignore" label="DB Address:" name="publishResultDbAddressTxt" multiline="true" tooltip="The DB Address mapped to your Server Module Name" view-data-key="publishResultDbAddressTxt" readonly="true" focusable="false" />
+                <ui:VisualElement name="optimizedHorizontal" style="flex-grow: 1; flex-direction: row;">
+                    <ui:Toggle label="Optimized Build:" name="publishResultIsOptimizedBuildToggle" view-data-key="publishResultIsOptimizedBuildToggle" tooltip="via `opt-wasm`" value="false" focusable="false" style="flex-direction: row; align-self: center;" />
+                    <ui:Button text="Install Package" parse-escape-sequences="true" display-tooltip-when-elided="true" name="installWasmOptBtn" tooltip="Set &amp; Forget: Globally install `wasm-opt` via npm." style="flex-grow: 1; font-size: 12px;" />
+                </ui:VisualElement>
+                <ui:VisualElement name="horizWrapper" style="flex-grow: 1; flex-direction: row;">
+                    <ui:Button text="Generate Client Typings" parse-escape-sequences="true" display-tooltip-when-elided="true" name="publishResultGenerateClientFilesBtn" tooltip="Outputs client files to `Assets/StdbAutogen`" style="flex-grow: 1; font-size: 12px; width: 130px;" />
+                </ui:VisualElement>
+                <ui:Label tabindex="-1" text="{publishResultStatusLabel}" parse-escape-sequences="true" display-tooltip-when-elided="true" name="publishResultStatusLabel" style="color: rgb(182, 192, 207); font-size: 14px; -unity-text-align: upper-center; display: flex; white-space: normal; -unity-font-style: normal;" />
+                <ui:ProgressBar value="5" title="Installing `wasm-opt` via npm ..." name="installWasmOptProgressBar" tooltip="Installing npm `wasm-opt` for future publish optimization" low-value="5" style="display: flex;" />
+            </ui:Foldout>
+            <ui:VisualElement name="spacer10" style="height: 10px;" />
+        </ui:ScrollView>
+        <ui:VisualElement name="errorCover" focusable="false" style="flex-grow: 1; background-color: rgb(22, 22, 22); position: absolute; width: 100%; height: 100%; top: 80px; display: none;">
+            <ui:Label tabindex="-1" text="&lt;color=#FDBE01&gt;&lt;b&gt;VisualElement Integrity Failed:&lt;/b&gt; See Logs\n(Perhaps a USS #id was renamed?)&lt;/color&gt;" parse-escape-sequences="true" display-tooltip-when-elided="true" name="errorCoverLabel" style="font-size: 15px; -unity-text-align: upper-center;" />
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
