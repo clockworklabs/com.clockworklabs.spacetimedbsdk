@@ -48,28 +48,14 @@ namespace SpacetimeDB
             };
         }
 
-        public bool Equals(Identity other)
-        {
-            return bytes.SequenceEqual(other.bytes);
-        }
+        public bool Equals(Identity other) => ByteArrayComparer.Instance.Equals(bytes, other.bytes);
 
-        public override bool Equals(object o)
-        {
-            return o is Identity other && Equals(other);
-        }
+        public override bool Equals(object o) => o is Identity other && Equals(other);
 
         public static bool operator ==(Identity a, Identity b) => a.Equals(b);
         public static bool operator !=(Identity a, Identity b) => !a.Equals(b);
 
-        public override int GetHashCode()
-        {
-            if (bytes == null)
-            {
-                throw new InvalidOperationException("Cannot hash on null bytes.");
-            }
-
-            return BitConverter.ToInt32(bytes, 0);
-        }
+        public override int GetHashCode() => ByteArrayComparer.Instance.GetHashCode(bytes);
 
         public override string ToString()
         {

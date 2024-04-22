@@ -43,7 +43,7 @@ namespace SpacetimeDB
         public static Address? From(byte[] bytes)
         {
             if (bytes.All(b => b == 0)) {
-              return null; 
+              return null;
             }
             return new Address
             {
@@ -51,15 +51,9 @@ namespace SpacetimeDB
             };
         }
 
-        public bool Equals(Address other)
-        {
-            return bytes.SequenceEqual(other.bytes);
-        }
+        public bool Equals(Address other) => ByteArrayComparer.Instance.Equals(bytes, other.bytes);
 
-        public override bool Equals(object o)
-        {
-            return o is Address other && Equals(other);
-        }
+        public override bool Equals(object o) => o is Address other && Equals(other);
 
         public static bool operator ==(Address a, Address b) => a.Equals(b);
         public static bool operator !=(Address a, Address b) => !a.Equals(b);
@@ -71,15 +65,7 @@ namespace SpacetimeDB
             return new Address{ bytes = bytes, };
         }
 
-        public override int GetHashCode()
-        {
-            if (bytes == null)
-            {
-                throw new InvalidOperationException("Cannot hash on null bytes.");
-            }
-
-            return BitConverter.ToInt32(bytes, 0);
-        }
+        public override int GetHashCode() => ByteArrayComparer.Instance.GetHashCode(bytes);
 
         public override string ToString()
         {
