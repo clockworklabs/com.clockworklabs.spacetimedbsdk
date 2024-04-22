@@ -104,7 +104,7 @@ namespace SpacetimeDB
         /// </summary>
         public event Action<ClientApi.Event> onEvent;
 
-        public Address clientAddress { get; private set; }
+        public readonly Address clientAddress = Address.Random();
 
         private SpacetimeDB.WebSocket webSocket;
         private bool connectionClosed;
@@ -123,22 +123,7 @@ namespace SpacetimeDB
         private Thread networkMessageProcessThread;
         private Thread stateDiffProcessThread;
 
-        public static SpacetimeDBClient instance;
-
-        public ISpacetimeDBLogger Logger => logger;
-        private ISpacetimeDBLogger logger;
-
-        public static void CreateInstance(ISpacetimeDBLogger loggerToUse)
-        {
-            if (instance == null)
-            {
-                new SpacetimeDBClient(loggerToUse);
-            }
-            else
-            {
-                loggerToUse.LogError($"Instance already created.");
-            }
-        }
+        public static readonly SpacetimeDBClient instance = new();
 
         public Type FindReducerType()
         {
@@ -165,27 +150,15 @@ namespace SpacetimeDB
             return null;
         }
 
-        protected SpacetimeDBClient(ISpacetimeDBLogger loggerToUse)
+        protected SpacetimeDBClient()
         {
-            if (instance != null)
-            {
-                loggerToUse.LogError($"There is more than one {GetType()}");
-                return;
-            }
-
-            instance = this;
-
-            clientAddress = Address.Random();
-
-            logger = loggerToUse;
-
             var options = new SpacetimeDB.ConnectOptions
             {
                 //v1.bin.spacetimedb
                 //v1.text.spacetimedb
                 Protocol = "v1.bin.spacetimedb",
             };
-            webSocket = new SpacetimeDB.WebSocket(logger, options);
+            webSocket = new SpacetimeDB.WebSocket(options);
             webSocket.OnMessage += OnMessageReceived;
             webSocket.OnClose += (code, error) => onDisconnect?.Invoke(code, error);
             webSocket.OnConnect += () => onConnect?.Invoke();
@@ -239,7 +212,7 @@ namespace SpacetimeDB
             }
             else
             {
-                loggerToUse.LogError($"Could not find reducer type. Have you run spacetime generate?");
+                Logger.LogError($"Could not find reducer type. Have you run spacetime generate?");
             }
 
             _preProcessCancellationToken = _preProcessCancellationTokenSource.Token;
@@ -335,7 +308,7 @@ namespace SpacetimeDB
                             var table = clientDB.GetTable(tableName);
                             if (table == null)
                             {
-                                logger.LogError($"Unknown table name: {tableName}");
+                                Logger.LogError($"Unknown table name: {tableName}");
                                 continue;
                             }
 
@@ -354,7 +327,7 @@ namespace SpacetimeDB
 
                                 if (row.Op != TableRowOperation.Types.OperationType.Insert)
                                 {
-                                    logger.LogWarning("Non-insert during a subscription update!");
+                                    Logger.LogWarning("Non-insert during a subscription update!");
                                     continue;
                                 }
 
@@ -373,7 +346,7 @@ namespace SpacetimeDB
 
                                 if (!hashSet.Add(rowBytes))
                                 {
-                                    logger.LogError($"Multiple of the same insert in the same subscription update: table={table.Name} rowBytes={rowBytes}");
+                                    Logger.LogError($"Multiple of the same insert in the same subscription update: table={table.ClientTableType.Name} rowBytes={rowBytes}");
                                 }
                                 else
                                 {
@@ -393,7 +366,7 @@ namespace SpacetimeDB
                             var table = clientDB.GetTable(tableName);
                             if (table == null)
                             {
-                                logger.LogError($"Unknown table name: {tableName}");
+                                Logger.LogError($"Unknown table name: {tableName}");
                                 continue;
                             }
 
@@ -437,7 +410,7 @@ namespace SpacetimeDB
                                     {
                                         if (value.op == op.op || value.op == TableOp.Update)
                                         {
-                                            logger.LogWarning($"Update with the same primary key was " +
+                                            Logger.LogWarning($"Update with the same primary key was " +
                                                               $"applied multiple times! tableName={tableName}");
                                             // TODO(jdetter): Is this a correctable error? This would be a major error on the
                                             // SpacetimeDB side.
@@ -502,7 +475,7 @@ namespace SpacetimeDB
 
                         if (!waitingOneOffQueries.ContainsKey(messageId))
                         {
-                            logger.LogError("Response to unknown one-off-query: " + messageId);
+                            Logger.LogError("Response to unknown one-off-query: " + messageId);
                             break;
                         }
 
@@ -512,7 +485,7 @@ namespace SpacetimeDB
                 }
 
 
-                // logger.LogWarning($"Total Updates preprocessed: {totalUpdateCount}");
+                // Logger.LogWarning($"Total Updates preprocessed: {totalUpdateCount}");
                 return new PreProcessedMessage { message = message, dbOps = dbOps, inserts = subscriptionInserts };
             }
         }
@@ -614,7 +587,7 @@ namespace SpacetimeDB
                 uri = $"ws://{uri}";
             }
 
-            logger.Log($"SpacetimeDBClient: Connecting to {uri} {addressOrName}");
+            Logger.Log($"SpacetimeDBClient: Connecting to {uri} {addressOrName}");
             Task.Run(async () =>
             {
                 try
@@ -625,11 +598,11 @@ namespace SpacetimeDB
                 {
                     if (connectionClosed)
                     {
-                        logger.Log("Connection closed gracefully.");
+                        Logger.Log("Connection closed gracefully.");
                         return;
                     }
 
-                    logger.LogException(e);
+                    Logger.LogException(e);
                 }
             });
         }
@@ -659,7 +632,7 @@ namespace SpacetimeDB
                             }
                             catch (Exception e)
                             {
-                                logger.LogException(e);
+                                Logger.LogException(e);
                             }
                         }
                     }
@@ -672,7 +645,7 @@ namespace SpacetimeDB
                         }
                         else
                         {
-                            logger.LogError("Delete issued, but no value was present!");
+                            Logger.LogError("Delete issued, but no value was present!");
                         }
                     }
 
@@ -684,7 +657,7 @@ namespace SpacetimeDB
                         }
                         else
                         {
-                            logger.LogError("Insert issued, but no value was present!");
+                            Logger.LogError("Insert issued, but no value was present!");
                         }
                     }
 
@@ -771,7 +744,7 @@ namespace SpacetimeDB
                                     }
                                     catch (Exception e)
                                     {
-                                        logger.LogException(e);
+                                        Logger.LogException(e);
                                     }
 
                                     try
@@ -784,12 +757,12 @@ namespace SpacetimeDB
                                     }
                                     catch (Exception e)
                                     {
-                                        logger.LogException(e);
+                                        Logger.LogException(e);
                                     }
                                 }
                                 else
                                 {
-                                    logger.LogError("Failed to send callback: invalid insert!");
+                                    Logger.LogError("Failed to send callback: invalid insert!");
                                 }
 
                                 break;
@@ -806,7 +779,7 @@ namespace SpacetimeDB
                                             }
                                             catch (Exception e)
                                             {
-                                                logger.LogException(e);
+                                                Logger.LogException(e);
                                             }
                                         }
 
@@ -819,13 +792,13 @@ namespace SpacetimeDB
                                             }
                                             catch (Exception e)
                                             {
-                                                logger.LogException(e);
+                                                Logger.LogException(e);
                                             }
                                         }
                                     }
                                     else
                                     {
-                                        logger.LogError("Failed to send callback: invalid delete");
+                                        Logger.LogError("Failed to send callback: invalid delete");
                                     }
 
                                     break;
@@ -844,7 +817,7 @@ namespace SpacetimeDB
                                         }
                                         catch (Exception e)
                                         {
-                                            logger.LogException(e);
+                                            Logger.LogException(e);
                                         }
 
                                         try
@@ -857,12 +830,12 @@ namespace SpacetimeDB
                                         }
                                         catch (Exception e)
                                         {
-                                            logger.LogException(e);
+                                            Logger.LogException(e);
                                         }
                                     }
                                     else
                                     {
-                                        logger.LogError("Failed to send callback: invalid update");
+                                        Logger.LogError("Failed to send callback: invalid update");
                                     }
 
                                     break;
@@ -890,7 +863,7 @@ namespace SpacetimeDB
                             }
                             catch (Exception e)
                             {
-                                logger.LogException(e);
+                                Logger.LogException(e);
                             }
 
                             break;
@@ -901,7 +874,7 @@ namespace SpacetimeDB
                             }
                             catch (Exception e)
                             {
-                                logger.LogException(e);
+                                Logger.LogException(e);
                             }
 
                             bool reducerFound = false;
@@ -914,7 +887,7 @@ namespace SpacetimeDB
                                 }
                                 catch (Exception e)
                                 {
-                                    logger.LogException(e);
+                                    Logger.LogException(e);
                                 }
                             }
 
@@ -928,7 +901,7 @@ namespace SpacetimeDB
                                 }
                                 catch (Exception e)
                                 {
-                                    logger.LogException(e);
+                                    Logger.LogException(e);
                                 }
                             }
 
@@ -955,7 +928,7 @@ namespace SpacetimeDB
                     }
                     catch (Exception e)
                     {
-                        logger.LogException(e);
+                        Logger.LogException(e);
                     }
 
                     break;
@@ -966,7 +939,7 @@ namespace SpacetimeDB
                     }
                     catch (Exception e)
                     {
-                        logger.LogException(e);
+                        Logger.LogException(e);
                     }
 
                     break;
@@ -979,7 +952,7 @@ namespace SpacetimeDB
         {
             if (!webSocket.IsConnected)
             {
-                logger.LogError("Cannot call reducer, not connected to server!");
+                Logger.LogError("Cannot call reducer, not connected to server!");
                 return;
             }
 
@@ -990,7 +963,7 @@ namespace SpacetimeDB
         {
             if (!webSocket.IsConnected)
             {
-                logger.LogError("Cannot subscribe, not connected to server!");
+                Logger.LogError("Cannot subscribe, not connected to server!");
                 return;
             }
 
@@ -1023,7 +996,7 @@ namespace SpacetimeDB
             T[] LogAndThrow(string error)
             {
                 error = "While processing one-off-query `" + queryString + "`, ID " + messageId + ": " + error;
-                logger.LogError(error);
+                Logger.LogError(error);
                 throw new Exception(error);
             }
 
