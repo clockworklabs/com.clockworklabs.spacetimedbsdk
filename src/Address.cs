@@ -11,7 +11,7 @@ namespace SpacetimeDB
     {
         private byte[] bytes;
 
-        public static int SIZE = 16;
+        public const int SIZE = 16;
 
         public byte[] Bytes => bytes;
 
