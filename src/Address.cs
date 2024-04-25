@@ -67,9 +67,6 @@ namespace SpacetimeDB
 
         public override int GetHashCode() => ByteArrayComparer.Instance.GetHashCode(bytes);
 
-        public override string ToString()
-        {
-            return string.Concat(bytes.Select(b => b.ToString("x2")));
-        }
+        public override string ToString() => ByteArrayComparer.ToHexString(bytes);
     }
 }

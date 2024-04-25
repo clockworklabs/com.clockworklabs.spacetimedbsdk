@@ -47,5 +47,9 @@ namespace SpacetimeDB
             }
             return hash;
         }
+
+        // Same as `Convert.ToHexString`, but that method is not available in .NET Standard
+        // which we need to target for Unity support.
+        public static string ToHexString(byte[] bytes) => BitConverter.ToString(bytes).Replace("-", "");
     }
 }
