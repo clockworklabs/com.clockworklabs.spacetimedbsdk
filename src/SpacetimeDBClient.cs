@@ -406,7 +406,7 @@ namespace SpacetimeDB
                                         }
                                         var (insertOp, deleteOp) = op.insert is not null ? (op, oldOp) : (oldOp, op);
 
-                                        primaryKeyLookup[primaryKeyValue] = new DbOp
+                                        op = new DbOp
                                         {
                                             table = insertOp.table,
                                             delete = deleteOp.delete,
@@ -414,10 +414,7 @@ namespace SpacetimeDB
                                             rowValue = insertOp.rowValue,
                                         };
                                     }
-                                    else
-                                    {
-                                        primaryKeyLookup[primaryKeyValue] = op;
-                                    }
+                                    primaryKeyLookup[primaryKeyValue] = op;
                                 }
                                 else
                                 {
@@ -506,23 +503,20 @@ namespace SpacetimeDB
                 {
                     foreach (var table in clientDB.GetTables())
                     {
-                        foreach (var rowBytes in table.entries.Keys)
+                        if (!preProcessedMessage.inserts.TryGetValue(table.Name, out var hashSet))
                         {
-                            if (!preProcessedMessage.inserts.TryGetValue(table.Name, out var hashSet))
-                            {
-                                continue;
-                            }
+                            continue;
+                        }
 
-                            if (!hashSet.Contains(rowBytes))
+                        foreach (var (rowBytes, oldValue) in table.entries.Where(kv => !hashSet.Contains(kv.Key)))
+                        {
+                            dbOps.Add(new DbOp
                             {
+                                table = table,
                                 // This is a row that we had before, but we do not have it now.
                                 // This must have been a delete.
-                                dbOps.Add(new DbOp
-                                {
-                                    table = table,
-                                    delete = new(table.entries[rowBytes].Item2, rowBytes),
-                                });
-                            }
+                                delete = new(oldValue.Item2, rowBytes),
+                            });
                         }
                     }
                 }
