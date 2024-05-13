@@ -80,7 +80,7 @@ namespace SpacetimeDB
                     if (code == WebSocketError.NotAWebSocket)
                     {
                         // not a websocket happens when there is no module published under the address specified
-                        message = $"{message} Did you forget to publish your module?";
+                        message += " Did you forget to publish your module?";
                     }
                     dispatchQueue.Enqueue(() => OnConnectError(code, message));
                 }
