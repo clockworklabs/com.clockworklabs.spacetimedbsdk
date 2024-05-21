@@ -72,7 +72,7 @@ void User_OnUpdate(User oldValue, User newValue, ReducerEvent? dbEvent)
 
 void PrintMessage(Message message)
 {
-    var sender = User.FilterByIdentity(message.Sender);
+    var sender = User.FindByIdentity(message.Sender);
     var senderName = "unknown";
     if(sender != null)
     {
