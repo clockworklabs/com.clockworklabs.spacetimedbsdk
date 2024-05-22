@@ -18,7 +18,7 @@ namespace SpacetimeDB.Types
 		[Newtonsoft.Json.JsonProperty("online")]
 		public bool Online;
 
-		private static Dictionary<SpacetimeDB.Identity, User> Identity_Index = new Dictionary<SpacetimeDB.Identity, User>(16);
+		private static Dictionary<SpacetimeDB.Identity, User> Identity_Index = new(16);
 
 		private static void InternalOnValueInserted(object insertedValue)
 		{
@@ -67,14 +67,17 @@ namespace SpacetimeDB.Types
 		{
 			return SpacetimeDBClient.clientDB.GetObjects("User").Cast<User>();
 		}
+
 		public static IEnumerable<User> Query(Func<User, bool> filter)
 		{
 			return Iter().Where(filter);
 		}
+
 		public static int Count()
 		{
 			return SpacetimeDBClient.clientDB.Count("User");
 		}
+
 		public static User FindByIdentity(SpacetimeDB.Identity value)
 		{
 			Identity_Index.TryGetValue(value, out var r);

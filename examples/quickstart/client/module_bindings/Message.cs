@@ -57,14 +57,17 @@ namespace SpacetimeDB.Types
 		{
 			return SpacetimeDBClient.clientDB.GetObjects("Message").Cast<Message>();
 		}
+
 		public static IEnumerable<Message> Query(Func<Message, bool> filter)
 		{
 			return Iter().Where(filter);
 		}
+
 		public static int Count()
 		{
 			return SpacetimeDBClient.clientDB.Count("Message");
 		}
+
 		public static IEnumerable<Message> FilterBySender(SpacetimeDB.Identity value)
 		{
 			return Query(x => x.Sender == value);
