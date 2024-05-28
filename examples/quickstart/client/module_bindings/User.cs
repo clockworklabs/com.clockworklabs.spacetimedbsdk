@@ -4,6 +4,7 @@
 using System;
 using SpacetimeDB;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace SpacetimeDB.Types
 {
