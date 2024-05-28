@@ -45,7 +45,7 @@ void RegisterCallbacks()
     Reducer.OnSendMessageEvent += Reducer_OnSendMessageEvent;
 }
 
-string UserNameOrIdentity(User user) => user.Name ?? user.Identity.ToString()!.Substring(0, 8);
+string UserNameOrIdentity(User user) => user.Name ?? user.Identity.ToString()[..8];
 
 void User_OnInsert(User insertedValue, ReducerEvent? dbEvent)
 {
@@ -167,7 +167,7 @@ void InputLoop()
 
         if (input.StartsWith("/name "))
         {
-            input_queue.Enqueue(("name", input.Substring(6)));
+            input_queue.Enqueue(("name", input[6..]));
             continue;
         }
         else
