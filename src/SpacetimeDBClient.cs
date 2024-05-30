@@ -122,11 +122,16 @@ namespace SpacetimeDB
             stateDiffProcessThread.Start();
         }
 
-        struct PreProcessedMessage
+        struct ProcessedMessage
         {
             public Message message;
             public List<DbOp> dbOps;
-            public Dictionary<System.Type, HashSet<byte[]>> inserts;
+        }
+
+        struct PreProcessedMessage
+        {
+            public ProcessedMessage processed;
+            public Dictionary<System.Type, HashSet<byte[]>>? subscriptionInserts;
         }
 
         private readonly BlockingCollection<byte[]> _messageQueue =
@@ -316,14 +321,12 @@ namespace SpacetimeDB
 
 
                 // Logger.LogWarning($"Total Updates preprocessed: {totalUpdateCount}");
-                return new PreProcessedMessage { message = message, dbOps = dbOps, inserts = subscriptionInserts };
+                return new PreProcessedMessage
+                {
+                    processed = new ProcessedMessage { message = message, dbOps = dbOps },
+                    subscriptionInserts = subscriptionInserts,
+                };
             }
-        }
-
-        struct ProcessedMessage
-        {
-            public Message message;
-            public List<DbOp> dbOps;
         }
 
         // The message that has been preprocessed and has had its state diff calculated
@@ -339,8 +342,7 @@ namespace SpacetimeDB
                 try
                 {
                     var message = _preProcessedNetworkMessages.Take(_stateDiffCancellationToken);
-                    var (m, events) = CalculateStateDiff(message);
-                    _stateDiffMessages.Add(new ProcessedMessage { dbOps = events, message = m, });
+                    _stateDiffMessages.Add(CalculateStateDiff(message));
                 }
                 catch (OperationCanceledException)
                 {
@@ -349,24 +351,24 @@ namespace SpacetimeDB
                 }
             }
 
-            (Message, List<DbOp>) CalculateStateDiff(PreProcessedMessage preProcessedMessage)
+            ProcessedMessage CalculateStateDiff(PreProcessedMessage preProcessedMessage)
             {
-                var message = preProcessedMessage.message;
-                var dbOps = preProcessedMessage.dbOps;
+                var processed = preProcessedMessage.processed;
+
                 // Perform the state diff, this has to be done on the main thread because we have to touch
                 // the client cache.
-                if (message.TypeCase == Message.TypeOneofCase.SubscriptionUpdate)
+                if (preProcessedMessage.subscriptionInserts is { } subscriptionInserts)
                 {
                     foreach (var table in clientDB.GetTables())
                     {
-                        if (!preProcessedMessage.inserts.TryGetValue(table.ClientTableType, out var hashSet))
+                        if (!subscriptionInserts.TryGetValue(table.ClientTableType, out var hashSet))
                         {
                             continue;
                         }
 
                         foreach (var (rowBytes, oldValue) in table.Where(kv => !hashSet.Contains(kv.Key)))
                         {
-                            dbOps.Add(new DbOp
+                            processed.dbOps.Add(new DbOp
                             {
                                 table = table,
                                 // This is a row that we had before, but we do not have it now.
@@ -377,7 +379,7 @@ namespace SpacetimeDB
                     }
                 }
 
-                return (message, dbOps);
+                return processed;
             }
         }
 
