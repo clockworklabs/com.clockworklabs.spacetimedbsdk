@@ -130,12 +130,12 @@ namespace SpacetimeDB
         }
 
         private readonly BlockingCollection<byte[]> _messageQueue =
-            new BlockingCollection<byte[]>(new ConcurrentQueue<byte[]>());
+            new(new ConcurrentQueue<byte[]>());
 
         private readonly BlockingCollection<PreProcessedMessage> _preProcessedNetworkMessages =
-            new BlockingCollection<PreProcessedMessage>(new ConcurrentQueue<PreProcessedMessage>());
+            new(new ConcurrentQueue<PreProcessedMessage>());
 
-        private readonly CancellationTokenSource _preProcessCancellationTokenSource = new CancellationTokenSource();
+        private readonly CancellationTokenSource _preProcessCancellationTokenSource = new();
         private readonly CancellationToken _preProcessCancellationToken;
 
         void PreProcessMessages()
@@ -328,8 +328,8 @@ namespace SpacetimeDB
 
         // The message that has been preprocessed and has had its state diff calculated
 
-        private readonly BlockingCollection<ProcessedMessage> _stateDiffMessages = new BlockingCollection<ProcessedMessage>();
-        private readonly CancellationTokenSource _stateDiffCancellationTokenSource = new CancellationTokenSource();
+        private readonly BlockingCollection<ProcessedMessage> _stateDiffMessages = new();
+        private readonly CancellationTokenSource _stateDiffCancellationTokenSource = new();
         private readonly CancellationToken _stateDiffCancellationToken;
 
         void ExecuteStateDiff()
