@@ -1,5 +1,3 @@
-#nullable disable
-
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -42,47 +40,47 @@ namespace SpacetimeDB
         /// <summary>
         /// Called when a connection is established to a spacetimedb instance.
         /// </summary>
-        public event Action onConnect;
+        public event Action? onConnect;
 
         /// <summary>
         /// Called when a connection attempt fails.
         /// </summary>
-        public event Action<WebSocketError?, string> onConnectError;
+        public event Action<WebSocketError?, string>? onConnectError;
 
         /// <summary>
         /// Called when an exception occurs when sending a message.
         /// </summary>
-        public event Action<Exception> onSendError;
+        public event Action<Exception>? onSendError;
 
         /// <summary>
         /// Called when a connection that was established has disconnected.
         /// </summary>
-        public event Action<WebSocketCloseStatus?, WebSocketError?> onDisconnect;
+        public event Action<WebSocketCloseStatus?, WebSocketError?>? onDisconnect;
 
         /// <summary>
         /// Invoked when a subscription is about to start being processed. This is called even before OnBeforeDelete.
         /// </summary>
-        public event Action onBeforeSubscriptionApplied;
+        public event Action? onBeforeSubscriptionApplied;
 
         /// <summary>
         /// Invoked when the local client cache is updated as a result of changes made to the subscription queries.
         /// </summary>
-        public event Action onSubscriptionApplied;
+        public event Action? onSubscriptionApplied;
 
         /// <summary>
         /// Invoked when a reducer is returned with an error and has no client-side handler.
         /// </summary>
-        public event Action<ReducerEventBase> onUnhandledReducerError;
+        public event Action<ReducerEventBase?>? onUnhandledReducerError;
 
         /// <summary>
         /// Called when we receive an identity from the server
         /// </summary>
-        public event Action<string, Identity, Address> onIdentityReceived;
+        public event Action<string, Identity, Address>? onIdentityReceived;
 
         /// <summary>
         /// Invoked when an event message is received or at the end of a transaction update.
         /// </summary>
-        public event Action<ClientApi.Event> onEvent;
+        public event Action<ClientApi.Event>? onEvent;
 
         public readonly Address clientAddress = Address.Random();
 
@@ -90,7 +88,7 @@ namespace SpacetimeDB
         private bool connectionClosed;
         public readonly ClientCache clientDB = new();
 
-        protected abstract ReducerEventBase ReducerEventFromDbEvent(ClientApi.Event dbEvent);
+        protected abstract ReducerEventBase? ReducerEventFromDbEvent(ClientApi.Event dbEvent);
 
         private readonly Dictionary<Guid, TaskCompletionSource<OneOffQueryResponse>> waitingOneOffQueries = new();
 
@@ -168,7 +166,7 @@ namespace SpacetimeDB
                 var message = Message.Parser.ParseFrom(decompressedStream);
 
                 // This is all of the inserts
-                Dictionary<System.Type, HashSet<byte[]>> subscriptionInserts = null;
+                Dictionary<System.Type, HashSet<byte[]>>? subscriptionInserts = null;
                 // All row updates that have a primary key, this contains inserts, deletes and updates
                 var primaryKeyChanges = new Dictionary<(System.Type tableType, object primaryKeyValue), DbOp>();
 
@@ -302,7 +300,15 @@ namespace SpacetimeDB
                         // Convert the generic event arguments in to a domain specific event object, this gets fed back into
                         // the message.TransactionUpdate.Event.FunctionCall.CallInfo field.
                         var dbEvent = message.TransactionUpdate.Event;
-                        dbEvent.FunctionCall.CallInfo = ReducerEventFromDbEvent(dbEvent);
+                        var reducerEvent = ReducerEventFromDbEvent(dbEvent);
+                        if (reducerEvent != null)
+                        {
+                            dbEvent.FunctionCall.CallInfo = reducerEvent;
+                        }
+                        else
+                        {
+                            Logger.LogError($"Unknown reducer {dbEvent.FunctionCall.Reducer}");
+                        }
 
                         break;
                     case { TypeCase: Message.TypeOneofCase.OneOffQueryResponse, OneOffQueryResponse: var resp }:
@@ -390,8 +396,6 @@ namespace SpacetimeDB
             webSocket.Close();
             _preProcessCancellationTokenSource.Cancel();
             _stateDiffCancellationTokenSource.Cancel();
-
-            webSocket = null;
         }
 
         /// <summary>
@@ -399,7 +403,7 @@ namespace SpacetimeDB
         /// </summary>
         /// <param name="uri"> URI of the SpacetimeDB server (ex: https://testnet.spacetimedb.com)
         /// <param name="addressOrName">The name or address of the database to connect to</param>
-        public void Connect(string token, string uri, string addressOrName)
+        public void Connect(string? token, string uri, string addressOrName)
         {
             isClosing = false;
 
@@ -431,7 +435,7 @@ namespace SpacetimeDB
         }
 
 
-        private void OnMessageProcessCompleteUpdate(Event transactionEvent, List<DbOp> dbOps)
+        private void OnMessageProcessCompleteUpdate(Event? transactionEvent, List<DbOp> dbOps)
         {
             // First trigger OnBeforeDelete
             foreach (var update in dbOps)
@@ -490,13 +494,13 @@ namespace SpacetimeDB
                     switch (dbOp)
                     {
                         case { insert: { value: var newValue }, delete: { value: var oldValue } }:
-                        {
-                            // If we matched an update, these values must have primary keys.
-                            var newValue_ = (IDatabaseTableWithPrimaryKey)newValue;
-                            var oldValue_ = (IDatabaseTableWithPrimaryKey)oldValue;
-                            oldValue_.OnUpdateEvent(newValue_, transactionEvent);
-                            break;
-                        }
+                            {
+                                // If we matched an update, these values must have primary keys.
+                                var newValue_ = (IDatabaseTableWithPrimaryKey)newValue;
+                                var oldValue_ = (IDatabaseTableWithPrimaryKey)oldValue;
+                                oldValue_.OnUpdateEvent(newValue_, transactionEvent);
+                                break;
+                            }
 
                         case { insert: { value: var newValue } }:
                             newValue.OnInsertEvent(transactionEvent);
@@ -542,9 +546,10 @@ namespace SpacetimeDB
                     }
 
                     bool reducerFound = false;
+                    var callInfo = transactionEvent.FunctionCall.CallInfo;
                     try
                     {
-                        reducerFound = transactionEvent.FunctionCall.CallInfo.InvokeHandler();
+                        reducerFound = callInfo?.InvokeHandler() ?? false;
                     }
                     catch (Exception e)
                     {
@@ -555,8 +560,7 @@ namespace SpacetimeDB
                     {
                         try
                         {
-                            onUnhandledReducerError?.Invoke(transactionEvent.FunctionCall
-                                .CallInfo);
+                            onUnhandledReducerError?.Invoke(callInfo);
                         }
                         catch (Exception e)
                         {
@@ -567,9 +571,9 @@ namespace SpacetimeDB
                 case { TypeCase: Message.TypeOneofCase.IdentityToken, IdentityToken: var identityToken }:
                     try
                     {
-                        onIdentityReceived?.Invoke(identityToken.Token,
-                            Identity.From(identityToken.Identity.ToByteArray()),
-                            (Address)Address.From(identityToken.Address.ToByteArray()));
+                        var identity = Identity.From(identityToken.Identity.ToByteArray());
+                        var address = Address.From(identityToken.Address.ToByteArray()) ?? throw new Exception("Received zero address");
+                        onIdentityReceived?.Invoke(identityToken.Token, identity, address);
                     }
                     catch (Exception e)
                     {
@@ -668,7 +672,7 @@ namespace SpacetimeDB
             var resultTable = result.Tables[0];
             var cacheTable = clientDB.GetTable(resultTable.TableName);
 
-            if (cacheTable.ClientTableType != type)
+            if (cacheTable?.ClientTableType != type)
             {
                 return LogAndThrow("Mismatched result type, expected " + type + " but got " + resultTable.TableName);
             }
@@ -676,7 +680,7 @@ namespace SpacetimeDB
             return resultTable.Row.Select(row => BSATNHelpers.FromProtoBytes<T>(row)).ToArray();
         }
 
-        public bool IsConnected() => webSocket != null && webSocket.IsConnected;
+        public bool IsConnected() => webSocket.IsConnected;
 
         public void Update()
         {

@@ -9,9 +9,9 @@ namespace SpacetimeDB
     {
         void InternalOnValueInserted();
         void InternalOnValueDeleted();
-        void OnInsertEvent(ClientApi.Event dbEvent);
-        void OnBeforeDeleteEvent(ClientApi.Event dbEvent);
-        void OnDeleteEvent(ClientApi.Event dbEvent);
+        void OnInsertEvent(ClientApi.Event? dbEvent);
+        void OnBeforeDeleteEvent(ClientApi.Event? dbEvent);
+        void OnDeleteEvent(ClientApi.Event? dbEvent);
     }
 
     public abstract class DatabaseTable<T, ReducerEvent> : IDatabaseTable
@@ -43,17 +43,17 @@ namespace SpacetimeDB
         public static event DeleteEventHandler? OnBeforeDelete;
         public static event DeleteEventHandler? OnDelete;
 
-        public void OnInsertEvent(ClientApi.Event dbEvent)
+        public void OnInsertEvent(ClientApi.Event? dbEvent)
         {
             OnInsert?.Invoke((T)this, (ReducerEvent?)dbEvent?.FunctionCall.CallInfo);
         }
 
-        public void OnBeforeDeleteEvent(ClientApi.Event dbEvent)
+        public void OnBeforeDeleteEvent(ClientApi.Event? dbEvent)
         {
             OnBeforeDelete?.Invoke((T)this, (ReducerEvent?)dbEvent?.FunctionCall.CallInfo);
         }
 
-        public void OnDeleteEvent(ClientApi.Event dbEvent)
+        public void OnDeleteEvent(ClientApi.Event? dbEvent)
         {
             OnDelete?.Invoke((T)this, (ReducerEvent?)dbEvent?.FunctionCall.CallInfo);
         }
@@ -61,7 +61,7 @@ namespace SpacetimeDB
 
     public interface IDatabaseTableWithPrimaryKey : IDatabaseTable
     {
-        void OnUpdateEvent(IDatabaseTableWithPrimaryKey newValue, ClientApi.Event dbEvent);
+        void OnUpdateEvent(IDatabaseTableWithPrimaryKey newValue, ClientApi.Event? dbEvent);
         object GetPrimaryKeyValue();
     }
 
@@ -74,7 +74,7 @@ namespace SpacetimeDB
         public delegate void UpdateEventHandler(T oldValue, T newValue, ReducerEvent? dbEvent);
         public static event UpdateEventHandler? OnUpdate;
 
-        public void OnUpdateEvent(IDatabaseTableWithPrimaryKey newValue, ClientApi.Event dbEvent)
+        public void OnUpdateEvent(IDatabaseTableWithPrimaryKey newValue, ClientApi.Event? dbEvent)
         {
             OnUpdate?.Invoke((T)this, (T)newValue, (ReducerEvent?)dbEvent?.FunctionCall.CallInfo);
         }
