@@ -15,7 +15,7 @@ namespace SpacetimeDB
             Type ClientTableType { get; }
             bool InsertEntry(byte[] rowBytes, IDatabaseTable value);
             bool DeleteEntry(byte[] rowBytes);
-            IDatabaseTable SetAndForgetDecodedValue(ByteString bytes);
+            IDatabaseTable DecodeValue(ByteString bytes);
         }
 
         public class TableCache<T> : ITableCache
@@ -50,7 +50,7 @@ namespace SpacetimeDB
             }
 
             // The function to use for decoding a type value.
-            public IDatabaseTable SetAndForgetDecodedValue(ByteString bytes) => BSATNHelpers.FromProtoBytes<T>(bytes);
+            public IDatabaseTable DecodeValue(ByteString bytes) => BSATNHelpers.FromProtoBytes<T>(bytes);
 
             public IEnumerator<KeyValuePair<byte[], IDatabaseTable>> GetEnumerator() => Entries.Select(kv => new KeyValuePair<byte[], IDatabaseTable>(kv.Key, kv.Value)).GetEnumerator();
 

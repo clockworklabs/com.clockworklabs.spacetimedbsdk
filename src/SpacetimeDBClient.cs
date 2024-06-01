@@ -215,7 +215,7 @@ namespace SpacetimeDB
                                 }
 
 
-                                var obj = table.SetAndForgetDecodedValue(row.Row);
+                                var obj = table.DecodeValue(row.Row);
                                 var op = new DbOp
                                 {
                                     table = table,
@@ -244,7 +244,7 @@ namespace SpacetimeDB
                             {
                                 var rowBytes = row.Row.ToByteArray();
 
-                                var obj = table.SetAndForgetDecodedValue(row.Row);
+                                var obj = table.DecodeValue(row.Row);
 
                                 var op = new DbOp { table = table };
 
