@@ -16,7 +16,8 @@ using Event = ClientApi.Event;
 
 namespace SpacetimeDB
 {
-    public abstract class SpacetimeDBClientBase
+    public abstract class SpacetimeDBClientBase<ReducerEvent>
+        where ReducerEvent : ReducerEventBase
     {
         struct DbValue
         {
@@ -70,7 +71,7 @@ namespace SpacetimeDB
         /// <summary>
         /// Invoked when a reducer is returned with an error and has no client-side handler.
         /// </summary>
-        public event Action<ReducerEventBase?>? onUnhandledReducerError;
+        public event Action<ReducerEvent>? onUnhandledReducerError;
 
         /// <summary>
         /// Called when we receive an identity from the server
@@ -88,7 +89,7 @@ namespace SpacetimeDB
         private bool connectionClosed;
         public readonly ClientCache clientDB = new();
 
-        protected abstract ReducerEventBase? ReducerEventFromDbEvent(ClientApi.Event dbEvent);
+        protected abstract ReducerEvent? ReducerEventFromDbEvent(ClientApi.Event dbEvent);
 
         private readonly Dictionary<Guid, TaskCompletionSource<OneOffQueryResponse>> waitingOneOffQueries = new();
 
@@ -545,11 +546,18 @@ namespace SpacetimeDB
                         Logger.LogException(e);
                     }
 
-                    bool reducerFound = false;
-                    var callInfo = transactionEvent.FunctionCall.CallInfo;
+                    // This should only happen if CallInfo is null due to unknown reducer (e.g. stale autogen)
+                    // but we downcast to the specific ReducerEvent in the same check just in case.
+                    if (transactionEvent.FunctionCall.CallInfo is not ReducerEvent reducerEvent)
+                    {
+                        Logger.LogWarning("Received a transaction update with unknown reducer.");
+                        break;
+                    }
+
+                    var reducerFound = false;
                     try
                     {
-                        reducerFound = callInfo?.InvokeHandler() ?? false;
+                        reducerFound = reducerEvent.InvokeHandler();
                     }
                     catch (Exception e)
                     {
@@ -560,7 +568,7 @@ namespace SpacetimeDB
                     {
                         try
                         {
-                            onUnhandledReducerError?.Invoke(callInfo);
+                            onUnhandledReducerError?.Invoke(reducerEvent);
                         }
                         catch (Exception e)
                         {
