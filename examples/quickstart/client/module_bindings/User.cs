@@ -43,7 +43,10 @@ namespace SpacetimeDB.Types
 
 		public static IEnumerable<User> FilterByIdentity(SpacetimeDB.Identity value)
 		{
-			return new[] { FindByIdentity(value) };
+			if (FindByIdentity(value) is {} found)
+			{
+				yield return found;
+			}
 		}
 
 		public static IEnumerable<User> FilterByOnline(bool value)

@@ -89,7 +89,7 @@ namespace SpacetimeDB
         private bool connectionClosed;
         public readonly ClientCache clientDB = new();
 
-        protected abstract ReducerEvent? ReducerEventFromDbEvent(ClientApi.Event dbEvent);
+        protected abstract ReducerEvent ReducerEventFromDbEvent(ClientApi.Event dbEvent);
 
         private readonly Dictionary<Guid, TaskCompletionSource<OneOffQueryResponse>> waitingOneOffQueries = new();
 
@@ -301,14 +301,13 @@ namespace SpacetimeDB
                         // Convert the generic event arguments in to a domain specific event object, this gets fed back into
                         // the message.TransactionUpdate.Event.FunctionCall.CallInfo field.
                         var dbEvent = message.TransactionUpdate.Event;
-                        var reducerEvent = ReducerEventFromDbEvent(dbEvent);
-                        if (reducerEvent != null)
+                        try
                         {
-                            dbEvent.FunctionCall.CallInfo = reducerEvent;
+                            dbEvent.FunctionCall.CallInfo = ReducerEventFromDbEvent(dbEvent);
                         }
-                        else
+                        catch (Exception e)
                         {
-                            Logger.LogError($"Unknown reducer {dbEvent.FunctionCall.Reducer}");
+                            Logger.LogException(e);
                         }
 
                         break;
@@ -546,11 +545,9 @@ namespace SpacetimeDB
                         Logger.LogException(e);
                     }
 
-                    // This should only happen if CallInfo is null due to unknown reducer (e.g. stale autogen)
-                    // but we downcast to the specific ReducerEvent in the same check just in case.
-                    if (transactionEvent.FunctionCall.CallInfo is not ReducerEvent reducerEvent)
+                    if (transactionEvent.FunctionCall.CallInfo is not {} reducerEvent)
                     {
-                        Logger.LogWarning("Received a transaction update with unknown reducer.");
+                        // If we are here, an error about unknown reducer should have already been logged, so nothing to do.
                         break;
                     }
 
@@ -568,7 +565,7 @@ namespace SpacetimeDB
                     {
                         try
                         {
-                            onUnhandledReducerError?.Invoke(reducerEvent);
+                            onUnhandledReducerError?.Invoke((ReducerEvent)reducerEvent);
                         }
                         catch (Exception e)
                         {

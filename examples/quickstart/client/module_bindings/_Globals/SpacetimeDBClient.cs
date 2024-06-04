@@ -24,25 +24,25 @@ namespace SpacetimeDB.Types
 
 	public partial class ReducerEvent : ReducerEventBase
 	{
-		public IReducerArgs Args { get; }
+		public IReducerArgs? Args { get; }
 
-		public string ReducerName => Args.ReducerName;
+		public string ReducerName => Args?.ReducerName ?? "<none>";
 
 		[Obsolete("ReducerType is deprecated, please match directly on type of .Args instead.")]
-		public ReducerType Reducer => Args.ReducerType;
+		public ReducerType Reducer => Args?.ReducerType ?? ReducerType.None;
 
-		public ReducerEvent(IReducerArgs args) : base() => Args = args;
-		public ReducerEvent(ClientApi.Event dbEvent, IReducerArgs args) : base(dbEvent) => Args = args;
+		public ReducerEvent(IReducerArgs? args) : base() => Args = args;
+		public ReducerEvent(ClientApi.Event dbEvent, IReducerArgs? args) : base(dbEvent) => Args = args;
 
 		[Obsolete("Accessors that implicitly cast `Args` are deprecated, please match `Args` against the desired type explicitly instead.")]
-		public SendMessageArgsStruct SendMessageArgs => (SendMessageArgsStruct)Args;
+		public SendMessageArgsStruct SendMessageArgs => (SendMessageArgsStruct)Args!;
 		[Obsolete("Accessors that implicitly cast `Args` are deprecated, please match `Args` against the desired type explicitly instead.")]
-		public SetNameArgsStruct SetNameArgs => (SetNameArgsStruct)Args;
+		public SetNameArgsStruct SetNameArgs => (SetNameArgsStruct)Args!;
 
-		public override bool InvokeHandler() => Args.InvokeHandler(this);
+		public override bool InvokeHandler() => Args?.InvokeHandler(this) ?? false;
 	}
 
-	public class SpacetimeDBClient : SpacetimeDBClientBase
+	public class SpacetimeDBClient : SpacetimeDBClientBase<ReducerEvent>
 	{
 		protected SpacetimeDBClient()
 		{
@@ -52,23 +52,16 @@ namespace SpacetimeDB.Types
 
 		public static readonly SpacetimeDBClient instance = new();
 
-		protected override ReducerEventBase? ReducerEventFromDbEvent(ClientApi.Event dbEvent)
+		protected override ReducerEvent? ReducerEventFromDbEvent(ClientApi.Event dbEvent)
 		{
 			var argBytes = dbEvent.FunctionCall.ArgBytes;
 			IReducerArgs? args = dbEvent.FunctionCall.Reducer switch {
 				"send_message" => BSATNHelpers.FromProtoBytes<SendMessageArgsStruct>(argBytes),
 				"set_name" => BSATNHelpers.FromProtoBytes<SetNameArgsStruct>(argBytes),
-				_ => null
+				"<none>" => null,
+				var reducer => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
 			};
-			return args is null ? null : new ReducerEvent(dbEvent, args);
+			return new ReducerEvent(dbEvent, args);
 		}
 	}
-
-	#if UNITY_5_3_OR_NEWER
-	public class NetworkManager : UnityEngine.MonoBehaviour
-	{
-		private void OnDestroy() => SpacetimeDBClient.instance.Close();
-		private void Update() => SpacetimeDBClient.instance.Update();
-	}
-	#endif
 }
