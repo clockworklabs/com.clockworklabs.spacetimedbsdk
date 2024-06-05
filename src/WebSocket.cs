@@ -59,7 +59,7 @@ namespace SpacetimeDB
             {
                 var tokenBytes = Encoding.UTF8.GetBytes($"token:{auth}");
                 var base64 = Convert.ToBase64String(tokenBytes);
-                Ws.Options.SetRequestHeader("Authorization", "Basic " + base64);
+                Ws.Options.SetRequestHeader("Authorization", $"Basic {base64}");
             }
             else
             {

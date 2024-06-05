@@ -5,7 +5,6 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Net.WebSockets;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using ClientApi;
@@ -273,8 +272,7 @@ namespace SpacetimeDB
                                     {
                                         if ((op.insert is not null && oldOp.insert is not null) || (op.delete is not null && oldOp.delete is not null))
                                         {
-                                            Logger.LogWarning($"Update with the same primary key was " +
-                                                              $"applied multiple times! tableName={tableName}");
+                                            Logger.LogWarning($"Update with the same primary key was applied multiple times! tableName={tableName}");
                                             // TODO(jdetter): Is this a correctable error? This would be a major error on the
                                             // SpacetimeDB side.
                                             continue;
@@ -320,7 +318,7 @@ namespace SpacetimeDB
 
                         if (!waitingOneOffQueries.Remove(messageId, out var resultSource))
                         {
-                            Logger.LogError("Response to unknown one-off-query: " + messageId);
+                            Logger.LogError($"Response to unknown one-off-query: {messageId}");
                             break;
                         }
 
@@ -506,10 +504,10 @@ namespace SpacetimeDB
 
             switch (message)
             {
-                case { TypeCase: Message.TypeOneofCase.SubscriptionUpdate }:
+                case { TypeCase: Message.TypeOneofCase.SubscriptionUpdate, SubscriptionUpdate: var subscriptionUpdate }:
                     onBeforeSubscriptionApplied?.Invoke();
-                    stats.ParseMessageTracker.InsertRequest(DateTime.UtcNow, DateTime.UtcNow - timestamp, "type=" + message.TypeCase.ToString());
-                    stats.SubscriptionRequestTracker.FinishTrackingRequest(message.SubscriptionUpdate.RequestId);
+                    stats.ParseMessageTracker.InsertRequest(timestamp, $"type={message.TypeCase}");
+                    stats.SubscriptionRequestTracker.FinishTrackingRequest(subscriptionUpdate.RequestId);
                     OnMessageProcessCompleteUpdate(null, dbOps);
                     try
                     {
@@ -520,17 +518,20 @@ namespace SpacetimeDB
                         Logger.LogException(e);
                     }
                     break;
-                case { TypeCase: Message.TypeOneofCase.TransactionUpdate, TransactionUpdate: { Event: var transactionEvent } }:
-                    stats.ParseMessageTracker.InsertRequest(DateTime.UtcNow, DateTime.UtcNow - timestamp, "type=" + message.TypeCase.ToString() + ",reducer=" + message.TransactionUpdate.Event.FunctionCall.Reducer);
-                    stats.AllReducersTracker.InsertRequest(DateTime.UtcNow, TimeSpan.FromMilliseconds(message.TransactionUpdate.Event.HostExecutionDurationMicros / 1000.0d), "reducer=" + message.TransactionUpdate.Event.FunctionCall.Reducer);
-                    var callerIdentity = Identity.From(message.TransactionUpdate.Event.CallerIdentity.ToByteArray());
+                case { TypeCase: Message.TypeOneofCase.TransactionUpdate, TransactionUpdate: var transactionUpdate }:
+                    var transactionEvent = transactionUpdate.Event;
+                    var reducer = transactionEvent.FunctionCall.Reducer;
+                    stats.ParseMessageTracker.InsertRequest(timestamp, $"type={message.TypeCase},reducer={reducer}");
+                    var hostDuration = TimeSpan.FromMilliseconds(transactionEvent.HostExecutionDurationMicros / 1000.0d);
+                    stats.AllReducersTracker.InsertRequest(hostDuration, $"reducer={reducer}");
+                    var callerIdentity = Identity.From(transactionEvent.CallerIdentity.ToByteArray());
                     if (callerIdentity == clientIdentity)
                     {
                         // This was a request that we initiated
-                        if (!stats.ReducerRequestTracker.FinishTrackingRequest(message.TransactionUpdate.SubscriptionUpdate.RequestId))
+                        var requestId = transactionUpdate.SubscriptionUpdate.RequestId;
+                        if (!stats.ReducerRequestTracker.FinishTrackingRequest(requestId))
                         {
-                            Logger.LogWarning("Failed to finish tracking reducer request: " +
-                                                message.TransactionUpdate.SubscriptionUpdate.RequestId);
+                            Logger.LogWarning($"Failed to finish tracking reducer request: {requestId}");
                         }
                     }
                     OnMessageProcessCompleteUpdate(transactionEvent, dbOps);
@@ -647,7 +648,7 @@ namespace SpacetimeDB
 
             // unsanitized here, but writes will be prevented serverside.
             // the best they can do is send multiple selects, which will just result in them getting no data back.
-            string queryString = "SELECT * FROM " + type.Name + " " + query;
+            string queryString = $"SELECT * FROM {type.Name} ${query}";
 
             var requestId = stats.OneOffRequestTracker.StartTrackingRequest();
             webSocket.Send(new Message
@@ -664,12 +665,12 @@ namespace SpacetimeDB
 
             if (!stats.OneOffRequestTracker.FinishTrackingRequest(requestId))
             {
-                Logger.LogWarning("Failed to finish tracking one off request: " + requestId);
+                Logger.LogWarning($"Failed to finish tracking one off request: {requestId}");
             }
 
             T[] LogAndThrow(string error)
             {
-                error = "While processing one-off-query `" + queryString + "`, ID " + messageId + ": " + error;
+                error = $"While processing one-off-query `{queryString}`, ID {messageId}: {error}";
                 Logger.LogError(error);
                 throw new Exception(error);
             }
@@ -677,12 +678,12 @@ namespace SpacetimeDB
             // The server got back to us
             if (result.Error != null && result.Error != "")
             {
-                return LogAndThrow("Server error: " + result.Error);
+                return LogAndThrow($"Server error: {result.Error}");
             }
 
             if (result.Tables.Count != 1)
             {
-                return LogAndThrow("Expected a single table, but got " + result.Tables.Count);
+                return LogAndThrow($"Expected a single table, but got {result.Tables.Count}");
             }
 
             var resultTable = result.Tables[0];
@@ -690,7 +691,7 @@ namespace SpacetimeDB
 
             if (cacheTable?.ClientTableType != type)
             {
-                return LogAndThrow("Mismatched result type, expected " + type + " but got " + resultTable.TableName);
+                return LogAndThrow($"Mismatched result type, expected {type} but got {resultTable.TableName}");
             }
 
             return resultTable.Row.Select(row => BSATNHelpers.FromProtoBytes<T>(row)).ToArray();
