@@ -52,7 +52,7 @@ namespace SpacetimeDB.Types
 
 		public static readonly SpacetimeDBClient instance = new();
 
-		protected override ReducerEvent? ReducerEventFromDbEvent(ClientApi.Event dbEvent)
+		protected override ReducerEvent ReducerEventFromDbEvent(ClientApi.Event dbEvent)
 		{
 			var argBytes = dbEvent.FunctionCall.ArgBytes;
 			IReducerArgs? args = dbEvent.FunctionCall.Reducer switch {
