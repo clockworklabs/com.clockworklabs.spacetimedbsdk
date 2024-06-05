@@ -112,11 +112,9 @@ namespace SpacetimeDB
             webSocket.OnConnectError += (a, b) => onConnectError?.Invoke(a, b);
             webSocket.OnSendError += a => onSendError?.Invoke(a);
 
-            _preProcessCancellationToken = _preProcessCancellationTokenSource.Token;
             networkMessageProcessThread = new Thread(PreProcessMessages);
             networkMessageProcessThread.Start();
 
-            _stateDiffCancellationToken = _stateDiffCancellationTokenSource.Token;
             stateDiffProcessThread = new Thread(ExecuteStateDiff);
             stateDiffProcessThread.Start();
         }
@@ -140,7 +138,7 @@ namespace SpacetimeDB
             new(new ConcurrentQueue<PreProcessedMessage>());
 
         private readonly CancellationTokenSource _preProcessCancellationTokenSource = new();
-        private readonly CancellationToken _preProcessCancellationToken;
+        private CancellationToken _preProcessCancellationToken => _preProcessCancellationTokenSource.Token;
 
         void PreProcessMessages()
         {
@@ -339,7 +337,7 @@ namespace SpacetimeDB
 
         private readonly BlockingCollection<ProcessedMessage> _stateDiffMessages = new();
         private readonly CancellationTokenSource _stateDiffCancellationTokenSource = new();
-        private readonly CancellationToken _stateDiffCancellationToken;
+        private CancellationToken _stateDiffCancellationToken => _stateDiffCancellationTokenSource.Token;
 
         void ExecuteStateDiff()
         {
