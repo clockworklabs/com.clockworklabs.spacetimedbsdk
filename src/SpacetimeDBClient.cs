@@ -87,7 +87,7 @@ namespace SpacetimeDB
 
         private SpacetimeDB.WebSocket webSocket;
         private bool connectionClosed;
-        public readonly ClientCache clientDB = new();
+        protected readonly ClientCache clientDB = new();
 
         protected abstract ReducerEvent ReducerEventFromDbEvent(ClientApi.Event dbEvent);
 
