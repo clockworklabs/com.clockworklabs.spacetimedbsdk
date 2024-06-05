@@ -7,10 +7,10 @@ namespace SpacetimeDB
 {
     public class NetworkRequestTracker
     {
-        private readonly ConcurrentQueue<(DateTime, TimeSpan, string)> _requestDurations = new();
+        private readonly ConcurrentQueue<(DateTime End, TimeSpan Duration, string Metadata)> _requestDurations = new();
 
         private uint _nextRequestId;
-        private readonly Dictionary<uint, (DateTime, string)> _requests = new();
+        private readonly Dictionary<uint, (DateTime Start, string Metadata)> _requests = new();
 
         public uint StartTrackingRequest(string metadata = "")
         {
@@ -36,7 +36,7 @@ namespace SpacetimeDB
             }
 
             // Calculate the duration and add it to the queue
-            InsertRequest(entry.Item1, entry.Item2);
+            InsertRequest(entry.Start, entry.Metadata);
             return true;
         }
 
@@ -50,25 +50,22 @@ namespace SpacetimeDB
             InsertRequest(DateTime.UtcNow - start, metadata);
         }
 
-        public ((TimeSpan, string), (TimeSpan, string)) GetMinMaxTimes(int lastSeconds)
+        public ((TimeSpan Duration, string Metadata) Min, (TimeSpan Duration, string Metadata) Max)? GetMinMaxTimes(int lastSeconds)
         {
             var cutoff = DateTime.UtcNow.AddSeconds(-lastSeconds);
+            var requestDurations = _requestDurations.Where(x => x.End >= cutoff).Select(x => (x.Duration, x.Metadata));
 
-            if (!_requestDurations.Where(x => x.Item1 >= cutoff).Select(x => (x.Item2, x.Item3)).Any())
+            if (!requestDurations.Any())
             {
-                return ((TimeSpan.Zero, ""), (TimeSpan.Zero, ""));
+                return null;
             }
 
-            var min = _requestDurations.Where(x => x.Item1 >= cutoff).Select(x => (x.Item2, x.Item3)).Min();
-            var max = _requestDurations.Where(x => x.Item1 >= cutoff).Select(x => (x.Item2, x.Item3)).Max();
-
-            return (min, max);
+            return (requestDurations.Min(), requestDurations.Max());
         }
 
         public int GetSampleCount() => _requestDurations.Count;
         public int GetRequestsAwaitingResponse() => _requests.Count;
     }
-
 
     public class Stats
     {
