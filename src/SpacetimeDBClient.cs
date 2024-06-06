@@ -648,7 +648,7 @@ namespace SpacetimeDB
 
             // unsanitized here, but writes will be prevented serverside.
             // the best they can do is send multiple selects, which will just result in them getting no data back.
-            string queryString = $"SELECT * FROM {type.Name} ${query}";
+            string queryString = $"SELECT * FROM {type.Name} {query}";
 
             var requestId = stats.OneOffRequestTracker.StartTrackingRequest();
             webSocket.Send(new Message
