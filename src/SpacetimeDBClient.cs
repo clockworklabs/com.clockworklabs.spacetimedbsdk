@@ -417,7 +417,7 @@ namespace SpacetimeDB
             // First trigger OnBeforeDelete
             foreach (var update in dbOps)
             {
-                if (update.delete is { value: var oldValue })
+                if (update is { delete: { value: var oldValue }, insert: null })
                 {
                     try
                     {
