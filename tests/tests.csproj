@@ -21,7 +21,7 @@
   <ItemGroup>
     <PackageReference Include="xunit" Version="2.8.1" />
     <ProjectReference Include="../SpacetimeDB.ClientSDK.csproj" />
-    <PackageReference Include="SpacetimeDB.BSATN.Codegen" Version="0.10.*" OutputItemType="Analyzer" />
+    <PackageReference Include="SpacetimeDB.BSATN.Codegen" Version="0.11.*" OutputItemType="Analyzer" />
 
     <Compile Include="../examples/quickstart/client/module_bindings/**/*.cs" />
   </ItemGroup>

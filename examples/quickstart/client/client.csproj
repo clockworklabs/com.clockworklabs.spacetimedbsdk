@@ -11,7 +11,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../../SpacetimeDB.ClientSDK.csproj" />
-    <PackageReference Include="SpacetimeDB.BSATN.Codegen" Version="0.10.*" OutputItemType="Analyzer" />
+    <PackageReference Include="SpacetimeDB.BSATN.Codegen" Version="0.11.*" OutputItemType="Analyzer" />
   </ItemGroup>
 
 </Project>
