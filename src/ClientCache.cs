@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using SpacetimeDB.BSATN;
 using SpacetimeDB.Internal;
-using Google.Protobuf;
+using SpacetimeDB.ClientApi;
 
 namespace SpacetimeDB
 {
@@ -15,7 +15,7 @@ namespace SpacetimeDB
             Type ClientTableType { get; }
             bool InsertEntry(byte[] rowBytes, IDatabaseTable value);
             bool DeleteEntry(byte[] rowBytes);
-            IDatabaseTable DecodeValue(ByteString bytes);
+            IDatabaseTable DecodeValue(byte[] bytes);
         }
 
         public class TableCache<T> : ITableCache
@@ -50,7 +50,7 @@ namespace SpacetimeDB
             }
 
             // The function to use for decoding a type value.
-            public IDatabaseTable DecodeValue(ByteString bytes) => BSATNHelpers.FromProtoBytes<T>(bytes);
+            public IDatabaseTable DecodeValue(byte[] bytes) => BSATNHelpers.Decode<T>(bytes);
 
             public IEnumerator<KeyValuePair<byte[], IDatabaseTable>> GetEnumerator() => Entries.Select(kv => new KeyValuePair<byte[], IDatabaseTable>(kv.Key, kv.Value)).GetEnumerator();
 
