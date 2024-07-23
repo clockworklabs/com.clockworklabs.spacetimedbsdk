@@ -24,9 +24,9 @@ jobs:
         repository: clockworklabs/SpacetimeDB
         path: SpacetimeDB
     - name: Setup SpacetimeDB packages
+      working-directory: spacetimedb-csharp-sdk
       run: |
-        ( cd SpacetimeDB/crates/bindings-csharp/BSATN.Runtime && dotnet pack )
-        cd spacetimedb-csharp-sdk
+        ( cd ../SpacetimeDB/crates/bindings-csharp/BSATN.Runtime && dotnet pack )
 
         # Write out the nuget config file to `nuget.config`. This causes the spacetimedb-csharp-sdk repository
         # to be aware of the local versions of the `bindings-csharp` packages in SpacetimeDB, and use them if
@@ -47,14 +47,14 @@ jobs:
         </configuration>
         EOF
     - name: Restore dependencies
+      working-directory: spacetimedb-csharp-sdk
       run: dotnet restore
-      working-directory: spacetimedb-csharp-sdk
     - name: Build everything
+      working-directory: spacetimedb-csharp-sdk
       run: dotnet build --no-restore -warnaserror
-      working-directory: spacetimedb-csharp-sdk
     - name: Run tests
+      working-directory: spacetimedb-csharp-sdk
       run: dotnet test --no-build
-      working-directory: spacetimedb-csharp-sdk
     - name: Verify formatting
-      run: dotnet format --no-restore --verify-no-changes SpacetimeDB.ClientSDK.sln
       working-directory: spacetimedb-csharp-sdk
+      run: dotnet format --no-restore --verify-no-changes SpacetimeDB.ClientSDK.sln
