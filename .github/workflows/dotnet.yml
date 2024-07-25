@@ -4,10 +4,8 @@
 name: .NET build
 
 on:
-  pull_request:
-  push:
-    branches:
-      - master
+  - push:
+  - pull_request: [opened, reopened]
 
 jobs:
   build:
