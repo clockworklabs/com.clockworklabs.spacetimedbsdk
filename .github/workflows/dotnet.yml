@@ -5,7 +5,8 @@ name: .NET build
 
 on:
   - push:
-  - pull_request: [opened, reopened]
+  - pull_request:
+      types: [opened, reopened]
 
 jobs:
   build:
