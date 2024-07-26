@@ -4,9 +4,9 @@
 name: .NET build
 
 on:
-  - push:
-  - pull_request:
-      types: [opened, reopened]
+  push:
+  pull_request:
+    types: [opened, reopened]
 
 jobs:
   build:
