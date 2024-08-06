@@ -9,7 +9,6 @@
     <Title>SpacetimeDB SDK</Title>
     <Authors>jdetter</Authors>
     <Company>Clockwork Labs</Company>
-    <PackageLicenseFile>LICENSE.txt</PackageLicenseFile>
     <Product>SpacetimeDB</Product>
     <Description>The SpacetimeDB SDK is a software development kit (SDK) designed to simplify the interaction with SpacetimeDB server modules.</Description>
     <Copyright>2024</Copyright>
@@ -31,7 +30,6 @@
   <ItemGroup>
     <None Update="logo.png" Pack="true" PackagePath="" />
     <None Update="README.md" Pack="true" PackagePath="" />
-    <None Include="LICENSE.txt" Pack="true" PackagePath="LICENSE.txt" />
   </ItemGroup>
 
 </Project>
