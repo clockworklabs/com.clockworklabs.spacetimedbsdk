@@ -14,7 +14,7 @@ namespace SpacetimeDB
             Warning = 8,
             Error = 16,
             Exception = 32,
-            All = Debug | Trace | Info | Warning | Error | Exception
+            All = ~0
         }
         LogLevel _logLevel;
 
