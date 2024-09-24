@@ -51,6 +51,10 @@ jobs:
             <packageSource key="Local SpacetimeDB.BSATN.Runtime">
               <package pattern="SpacetimeDB.BSATN.Runtime" />
             </packageSource>
+            <!-- Fallback for other packages (e.g. test deps). -->
+            <packageSource key="nuget.org">
+              <package pattern="*" />
+            </packageSource>
           </packageSourceMapping>
         </configuration>
         EOF
