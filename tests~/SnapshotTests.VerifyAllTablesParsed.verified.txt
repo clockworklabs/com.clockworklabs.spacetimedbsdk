@@ -37,6 +37,17 @@
         online: true
       }
     },
+    OnEvent: {
+      status: {Scrubbed},
+      timestamp: 1718487763059031,
+      caller_identity: Identity_2,
+      caller_address: Guid_1,
+      reducer_call: {
+        reducer_name: __identity_connected__
+      },
+      energy_quanta_used: 1957615,
+      host_execution_duration_micros: 66
+    },
     OnUpdateUser: {
       eventContext: {
         Reducers: {Scrubbed},
@@ -285,6 +296,17 @@
         name: B,
         online: false
       }
+    },
+    OnEvent: {
+      status: {Scrubbed},
+      timestamp: 1718487791901504,
+      caller_identity: Identity_2,
+      caller_address: Guid_1,
+      reducer_call: {
+        reducer_name: __identity_disconnected__
+      },
+      energy_quanta_used: 3595615,
+      host_execution_duration_micros: 75
     },
     OnInsertMessage: {
       eventContext: {
