@@ -19,12 +19,14 @@ void Main()
 {
     AuthToken.Init(".spacetime_csharp_quickstart");
 
+    // TODO: just do `var conn = DbConnection...` when OnConnect signature is fixed.
     DbConnection? conn = null;
 
     conn = DbConnection.Builder()
         .WithUri(HOST)
         .WithModuleName(DBNAME)
         //.WithCredentials((null, AuthToken.Token))
+        // TODO: change this to just `(OnConnect)` when signature is fixed in #131.
         .OnConnect((identity, authToken) => OnConnect(conn!, identity, authToken))
         .OnConnectError(OnConnectError)
         .OnDisconnect(OnDisconnect)
