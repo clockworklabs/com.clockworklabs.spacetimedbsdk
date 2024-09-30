@@ -77,7 +77,12 @@ namespace SpacetimeDB
         }
     }
 
-    public abstract class DbConnectionBase<DbConnection, Reducer>
+	internal interface IDbConnection
+	{
+        void Subscribe(ISubscriptionHandle handle, string query);
+	}
+
+    public abstract class DbConnectionBase<DbConnection, Reducer> : IDbConnection
         where DbConnection : DbConnectionBase<DbConnection, Reducer>, new()
     {
         public static DbConnectionBuilder<DbConnection, Reducer> Builder() => new();
@@ -108,15 +113,12 @@ namespace SpacetimeDB
         /// </summary>
         public event Action<Exception>? onSendError;
 
+        private readonly Dictionary<uint, ISubscriptionHandle> subscriptions = new();
+
         /// <summary>
         /// Invoked when a subscription is about to start being processed. This is called even before OnBeforeDelete.
         /// </summary>
         public event Action? onBeforeSubscriptionApplied;
-
-        /// <summary>
-        /// Invoked when the local client cache is updated as a result of changes made to the subscription queries.
-        /// </summary>
-        public event Action? onSubscriptionApplied;
 
         /// <summary>
         /// Invoked when a reducer is returned with an error and has no client-side handler.
@@ -604,21 +606,24 @@ namespace SpacetimeDB
             switch (message)
             {
                 case ServerMessage.InitialSubscription(var initialSubscription):
+                {
                     onBeforeSubscriptionApplied?.Invoke();
                     stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.InitialSubscription)}");
                     stats.SubscriptionRequestTracker.FinishTrackingRequest(initialSubscription.RequestId);
-                    OnMessageProcessCompleteUpdate(ToEventContext(new Event<Reducer>.SubscribeApplied()), dbOps);
+                    var eventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
+                    OnMessageProcessCompleteUpdate(eventContext, dbOps);
                     try
                     {
-                        onSubscriptionApplied?.Invoke();
+                        subscriptions[initialSubscription.RequestId].OnApplied(eventContext);
                     }
                     catch (Exception e)
                     {
                         Log.Exception(e);
                     }
                     break;
-
+                }
                 case ServerMessage.TransactionUpdate(var transactionUpdate):
+                {
                     var reducer = transactionUpdate.ReducerCall.ReducerName;
                     stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.TransactionUpdate)},reducer={reducer}");
                     var hostDuration = TimeSpan.FromMilliseconds(transactionUpdate.HostExecutionDurationMicros / 1000.0d);
@@ -673,7 +678,7 @@ namespace SpacetimeDB
                         }
                     }
                     break;
-
+                }
                 case ServerMessage.IdentityToken(var identityToken):
                     try
                     {
@@ -725,7 +730,7 @@ namespace SpacetimeDB
             ));
         }
 
-        public void Subscribe(List<string> queries)
+        void IDbConnection.Subscribe(ISubscriptionHandle handle, string query)
         {
             if (!webSocket.IsConnected)
             {
@@ -733,12 +738,15 @@ namespace SpacetimeDB
                 return;
             }
 
-            var request = new Subscribe
-            {
-                RequestId = stats.SubscriptionRequestTracker.StartTrackingRequest(),
-            };
-            request.QueryStrings.AddRange(queries);
-            webSocket.Send(new ClientMessage.Subscribe(request));
+            var id = stats.SubscriptionRequestTracker.StartTrackingRequest();
+            subscriptions[id] = handle;
+            webSocket.Send(new ClientMessage.Subscribe(
+                new Subscribe
+                {
+                    RequestId = id,
+                    QueryStrings = { query }
+                }
+            ));
         }
 
         /// Usage: SpacetimeDBClientBase.instance.OneOffQuery<Message>("WHERE sender = \"bob\"");
