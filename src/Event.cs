@@ -44,7 +44,7 @@ namespace SpacetimeDB
         private event Action<EventContext>? Applied;
         private event Action<EventContext>? Error;
 
-        internal SubscriptionBuilder(IDbConnection conn)
+        public SubscriptionBuilder(IDbConnection conn)
         {
             this.conn = conn;
         }
@@ -64,7 +64,7 @@ namespace SpacetimeDB
         public SubscriptionHandle<EventContext> Subscribe(string querySql) => new(conn, Applied, Error, querySql);
     }
 
-    internal interface ISubscriptionHandle
+    public interface ISubscriptionHandle
     {
         void OnApplied(IEventContext ctx);
     }

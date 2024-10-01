@@ -77,10 +77,10 @@ namespace SpacetimeDB
         }
     }
 
-	internal interface IDbConnection
-	{
+    public interface IDbConnection
+    {
         void Subscribe(ISubscriptionHandle handle, string query);
-	}
+    }
 
     public abstract class DbConnectionBase<DbConnection, Reducer> : IDbConnection
         where DbConnection : DbConnectionBase<DbConnection, Reducer>, new()
@@ -606,79 +606,79 @@ namespace SpacetimeDB
             switch (message)
             {
                 case ServerMessage.InitialSubscription(var initialSubscription):
-                {
-                    onBeforeSubscriptionApplied?.Invoke();
-                    stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.InitialSubscription)}");
-                    stats.SubscriptionRequestTracker.FinishTrackingRequest(initialSubscription.RequestId);
-                    var eventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
-                    OnMessageProcessCompleteUpdate(eventContext, dbOps);
-                    try
                     {
-                        subscriptions[initialSubscription.RequestId].OnApplied(eventContext);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Exception(e);
-                    }
-                    break;
-                }
-                case ServerMessage.TransactionUpdate(var transactionUpdate):
-                {
-                    var reducer = transactionUpdate.ReducerCall.ReducerName;
-                    stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.TransactionUpdate)},reducer={reducer}");
-                    var hostDuration = TimeSpan.FromMilliseconds(transactionUpdate.HostExecutionDurationMicros / 1000.0d);
-                    stats.AllReducersTracker.InsertRequest(hostDuration, $"reducer={reducer}");
-                    var callerIdentity = transactionUpdate.CallerIdentity;
-                    if (callerIdentity == clientIdentity)
-                    {
-                        // This was a request that we initiated
-                        var requestId = transactionUpdate.ReducerCall.RequestId;
-                        if (!stats.ReducerRequestTracker.FinishTrackingRequest(requestId))
-                        {
-                            Log.Warn($"Failed to finish tracking reducer request: {requestId}");
-                        }
-                    }
-
-                    if (processed.reducerEvent is not { } reducerEvent)
-                    {
-                        // If we are here, an error about unknown reducer should have already been logged, so nothing to do.
-                        break;
-                    }
-
-                    var eventContext = ToEventContext(new Event<Reducer>.Reducer(reducerEvent));
-                    OnMessageProcessCompleteUpdate(eventContext, dbOps);
-                    try
-                    {
-                        onEvent?.Invoke(message);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Exception(e);
-                    }
-
-                    var reducerFound = false;
-                    try
-                    {
-                        reducerFound = Dispatch(eventContext, reducerEvent.Reducer);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Exception(e);
-                    }
-
-                    if (!reducerFound && transactionUpdate.Status is UpdateStatus.Failed(var failed))
-                    {
+                        onBeforeSubscriptionApplied?.Invoke();
+                        stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.InitialSubscription)}");
+                        stats.SubscriptionRequestTracker.FinishTrackingRequest(initialSubscription.RequestId);
+                        var eventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
+                        OnMessageProcessCompleteUpdate(eventContext, dbOps);
                         try
                         {
-                            onUnhandledReducerError?.Invoke(reducerEvent);
+                            subscriptions[initialSubscription.RequestId].OnApplied(eventContext);
                         }
                         catch (Exception e)
                         {
                             Log.Exception(e);
                         }
+                        break;
                     }
-                    break;
-                }
+                case ServerMessage.TransactionUpdate(var transactionUpdate):
+                    {
+                        var reducer = transactionUpdate.ReducerCall.ReducerName;
+                        stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.TransactionUpdate)},reducer={reducer}");
+                        var hostDuration = TimeSpan.FromMilliseconds(transactionUpdate.HostExecutionDurationMicros / 1000.0d);
+                        stats.AllReducersTracker.InsertRequest(hostDuration, $"reducer={reducer}");
+                        var callerIdentity = transactionUpdate.CallerIdentity;
+                        if (callerIdentity == clientIdentity)
+                        {
+                            // This was a request that we initiated
+                            var requestId = transactionUpdate.ReducerCall.RequestId;
+                            if (!stats.ReducerRequestTracker.FinishTrackingRequest(requestId))
+                            {
+                                Log.Warn($"Failed to finish tracking reducer request: {requestId}");
+                            }
+                        }
+
+                        if (processed.reducerEvent is not { } reducerEvent)
+                        {
+                            // If we are here, an error about unknown reducer should have already been logged, so nothing to do.
+                            break;
+                        }
+
+                        var eventContext = ToEventContext(new Event<Reducer>.Reducer(reducerEvent));
+                        OnMessageProcessCompleteUpdate(eventContext, dbOps);
+                        try
+                        {
+                            onEvent?.Invoke(message);
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Exception(e);
+                        }
+
+                        var reducerFound = false;
+                        try
+                        {
+                            reducerFound = Dispatch(eventContext, reducerEvent.Reducer);
+                        }
+                        catch (Exception e)
+                        {
+                            Log.Exception(e);
+                        }
+
+                        if (!reducerFound && transactionUpdate.Status is UpdateStatus.Failed(var failed))
+                        {
+                            try
+                            {
+                                onUnhandledReducerError?.Invoke(reducerEvent);
+                            }
+                            catch (Exception e)
+                            {
+                                Log.Exception(e);
+                            }
+                        }
+                        break;
+                    }
                 case ServerMessage.IdentityToken(var identityToken):
                     try
                     {
