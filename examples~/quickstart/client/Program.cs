@@ -129,7 +129,7 @@ void Reducer_OnSendMessageEvent(EventContext ctx, string text)
     }
 }
 
-void OnConnect(DbConnection _, Identity identity, string authToken)
+void OnConnect(DbConnection conn, Identity identity, string authToken)
 {
     local_identity = identity;
     AuthToken.SaveToken(authToken);
