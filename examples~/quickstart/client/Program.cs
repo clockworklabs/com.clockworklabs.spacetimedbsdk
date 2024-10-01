@@ -189,7 +189,7 @@ void ProcessThread(DbConnection conn, CancellationToken ct)
     }
     finally
     {
-        conn.Close();
+        conn.Disconnect();
     }
 }
 
