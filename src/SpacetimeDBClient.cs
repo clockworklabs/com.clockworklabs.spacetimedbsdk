@@ -140,7 +140,7 @@ namespace SpacetimeDB
 
         protected DbConnectionBase()
         {
-            var options = new ConnectOptions
+            var options = new WebSocket.ConnectOptions
             {
                 //v1.bin.spacetimedb
                 //v1.text.spacetimedb
