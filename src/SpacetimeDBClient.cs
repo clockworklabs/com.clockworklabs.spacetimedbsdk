@@ -195,27 +195,34 @@ namespace SpacetimeDB
         private static readonly Status Committed = new Status.Committed(default);
         private static readonly Status OutOfEnergy = new Status.OutOfEnergy(default);
 
+        enum CompressionAlgos : byte
+        {
+            None = 0,
+            Brotli = 1,
+        }
+
         private static ServerMessage DecompressDecodeMessage(byte[] bytes)
         {
             using var stream = new MemoryStream(bytes, 1, bytes.Length - 1);
 
-            switch (bytes[0])
+            // The stream will never be empty. It will at least contain the compression algo.
+            var compression = (CompressionAlgos)bytes[0];
+            // Conditionally decompress and decode.
+            switch (compression)
             {
-                // Uncompressed.
-                case 0:
+                case CompressionAlgos.None:
                     {
                         using var binaryReader = new BinaryReader(stream);
                         return new ServerMessage.BSATN().Read(binaryReader);
                     }
-                // Brotli compressed.
-                case 1:
+                case CompressionAlgos.Brotli:
                     {
                         using var decompressedStream = new BrotliStream(stream, CompressionMode.Decompress);
                         using var binaryReader = new BinaryReader(decompressedStream);
                         return new ServerMessage.BSATN().Read(binaryReader);
                     }
                 default:
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("Unknown compression type");
             }
         }
 
@@ -247,7 +254,7 @@ namespace SpacetimeDB
                 case RowSizeHint.RowOffsets(var offsets):
                     return offsets.Count;
                 default:
-                    throw new InvalidOperationException();
+                    throw new InvalidOperationException("Unknown RowSizeHint variant");
             }
         }
 
