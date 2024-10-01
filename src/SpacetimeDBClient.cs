@@ -612,13 +612,16 @@ namespace SpacetimeDB
                         stats.SubscriptionRequestTracker.FinishTrackingRequest(initialSubscription.RequestId);
                         var eventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
                         OnMessageProcessCompleteUpdate(eventContext, dbOps);
-                        try
+                        if (subscriptions.TryGetValue(initialSubscription.RequestId, out var subscription))
                         {
-                            subscriptions[initialSubscription.RequestId].OnApplied(eventContext);
-                        }
-                        catch (Exception e)
-                        {
-                            Log.Exception(e);
+                            try
+                            {
+                                subscription.OnApplied(eventContext);
+                            }
+                            catch (Exception e)
+                            {
+                                Log.Exception(e);
+                            }
                         }
                         break;
                     }
