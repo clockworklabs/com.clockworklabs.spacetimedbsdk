@@ -111,27 +111,19 @@ namespace SpacetimeDB
         /// <summary>
         /// Called when an exception occurs when sending a message.
         /// </summary>
+        [Obsolete]
         public event Action<Exception>? onSendError;
 
         private readonly Dictionary<uint, ISubscriptionHandle> subscriptions = new();
 
         /// <summary>
-        /// Invoked when a subscription is about to start being processed. This is called even before OnBeforeDelete.
-        /// </summary>
-        public event Action? onBeforeSubscriptionApplied;
-
-        /// <summary>
         /// Invoked when a reducer is returned with an error and has no client-side handler.
         /// </summary>
+        [Obsolete]
         public event Action<ReducerEvent<Reducer>>? onUnhandledReducerError;
 
-        /// <summary>
-        /// Invoked when an event message is received or at the end of a transaction update.
-        /// </summary>
-        public event Action<ServerMessage>? onEvent;
-
-        public readonly Address clientAddress = Address.Random();
-        public Identity? clientIdentity { get; private set; }
+        public readonly Address Address = Address.Random();
+        public Identity? Identity { get; private set; }
 
         internal WebSocket webSocket;
         private bool connectionClosed;
@@ -499,7 +491,7 @@ namespace SpacetimeDB
             {
                 try
                 {
-                    await webSocket.Connect(token, uri, addressOrName, clientAddress);
+                    await webSocket.Connect(token, uri, addressOrName, Address);
                 }
                 catch (Exception e)
                 {
@@ -605,7 +597,6 @@ namespace SpacetimeDB
             {
                 case ServerMessage.InitialSubscription(var initialSubscription):
                     {
-                        onBeforeSubscriptionApplied?.Invoke();
                         stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.InitialSubscription)}");
                         stats.SubscriptionRequestTracker.FinishTrackingRequest(initialSubscription.RequestId);
                         var eventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
@@ -630,7 +621,7 @@ namespace SpacetimeDB
                         var hostDuration = TimeSpan.FromMilliseconds(transactionUpdate.HostExecutionDurationMicros / 1000.0d);
                         stats.AllReducersTracker.InsertRequest(hostDuration, $"reducer={reducer}");
                         var callerIdentity = transactionUpdate.CallerIdentity;
-                        if (callerIdentity == clientIdentity)
+                        if (callerIdentity == Identity)
                         {
                             // This was a request that we initiated
                             var requestId = transactionUpdate.ReducerCall.RequestId;
@@ -648,14 +639,6 @@ namespace SpacetimeDB
 
                         var eventContext = ToEventContext(new Event<Reducer>.Reducer(reducerEvent));
                         OnMessageProcessCompleteUpdate(eventContext, dbOps);
-                        try
-                        {
-                            onEvent?.Invoke(message);
-                        }
-                        catch (Exception e)
-                        {
-                            Log.Exception(e);
-                        }
 
                         var reducerFound = false;
                         try
@@ -683,7 +666,7 @@ namespace SpacetimeDB
                 case ServerMessage.IdentityToken(var identityToken):
                     try
                     {
-                        clientIdentity = identityToken.Identity;
+                        Identity = identityToken.Identity;
                         onConnect?.Invoke(identityToken.Identity, identityToken.Token);
                     }
                     catch (Exception e)
@@ -693,14 +676,7 @@ namespace SpacetimeDB
                     break;
 
                 case ServerMessage.OneOffQueryResponse:
-                    try
-                    {
-                        onEvent?.Invoke(message);
-                    }
-                    catch (Exception e)
-                    {
-                        Log.Exception(e);
-                    }
+                    /* OneOffQuery is async and handles its own responses */
                     break;
 
                 default:
@@ -807,9 +783,9 @@ namespace SpacetimeDB
             return resultTable.Rows.Select(BSATNHelpers.Decode<T>).ToArray();
         }
 
-        public bool IsConnected() => webSocket.IsConnected;
+        public bool IsActive => webSocket.IsConnected;
 
-        public void Update()
+        public void FrameTick()
         {
             webSocket.Update();
             while (_preProcessedNetworkMessages.TryTake(out var preProcessedMessage))

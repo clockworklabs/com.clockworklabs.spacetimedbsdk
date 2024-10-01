@@ -178,7 +178,7 @@ void ProcessThread(DbConnection conn, CancellationToken ct)
         // loop until cancellation token
         while (!ct.IsCancellationRequested)
         {
-            conn.Update();
+            conn.FrameTick();
 
             ProcessCommands(conn.RemoteReducers);
 
