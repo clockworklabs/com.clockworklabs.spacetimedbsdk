@@ -462,7 +462,7 @@ namespace SpacetimeDB
             return processed;
         }
 
-        public void Close()
+        public void Disconnect()
         {
             isClosing = true;
             connectionClosed = true;
@@ -475,7 +475,7 @@ namespace SpacetimeDB
         /// </summary>
         /// <param name="uri"> URI of the SpacetimeDB server (ex: https://testnet.spacetimedb.com)
         /// <param name="addressOrName">The name or address of the database to connect to</param>
-        public void Connect(string? token, string uri, string addressOrName)
+        internal void Connect(string? token, string uri, string addressOrName)
         {
             isClosing = false;
 
