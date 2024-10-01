@@ -3,7 +3,7 @@
     Log: SpacetimeDBClient: Connecting to wss://spacetimedb.com example,
     OnConnect: {
       identity: Identity_1,
-      token: ***
+      token: eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJoZXhfaWRlbnRpdHkiOiI4ZjkwY2M5NGE5OTY4ZGY2ZDI5N2JhYTY2NTAzYTg5M2IxYzM0YjBiMDAyNjhhNTE0ODk4ZGQ5NTRiMGRhMjBiIiwiaWF0IjoxNzE4NDg3NjY4LCJleHAiOm51bGx9.PSn481bLRqtFwIh46nOXDY14X3GKbz8t4K4GmBmz50loU6xzeL7zDdCh1V2cmiQsoGq8Erxg0r_6b6Y5SqKoBA
     },
     OnInsertUser: {
       eventContext: {
