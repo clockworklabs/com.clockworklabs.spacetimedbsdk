@@ -39,7 +39,9 @@ void Main()
     conn.RemoteReducers.OnSetName += Reducer_OnSetNameEvent;
     conn.RemoteReducers.OnSendMessage += Reducer_OnSendMessageEvent;
 
+#pragma warning disable CS0612 // Using obsolete API
     conn.onUnhandledReducerError += onUnhandledReducerError;
+#pragma warning restore CS0612 // Using obsolete API
 
     // declare a threadsafe cancel token to cancel the process loop
     var cancellationTokenSource = new CancellationTokenSource();
