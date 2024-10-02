@@ -1,6 +1,7 @@
 #if UNITY_5_3_OR_NEWER
-using SpacetimeDB;
+using System;
 using System.Collections.Generic;
+using SpacetimeDB;
 using UnityEngine;
 
 namespace SpacetimeDB
@@ -36,7 +37,7 @@ namespace SpacetimeDB
 		}
 
 		private void Update() => ForEachConnection(conn => conn.FrameTick());
-		private void OnDestroy() => ForEachConnection(conn => conn.Dispose());
+		private void OnDestroy() => ForEachConnection(conn => conn.Disconnect());
 	}
 }
 #endif
