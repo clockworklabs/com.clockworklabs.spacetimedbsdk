@@ -79,7 +79,9 @@ namespace SpacetimeDB
 
     public interface IDbConnection
     {
-        void Subscribe(ISubscriptionHandle handle, string query);
+        internal void Subscribe(ISubscriptionHandle handle, string query);
+        void FrameTick();
+        void Disconnect();
     }
 
     public abstract class DbConnectionBase<DbConnection, Reducer> : IDbConnection
@@ -149,6 +151,9 @@ namespace SpacetimeDB
             webSocket = new WebSocket(options);
             webSocket.OnMessage += OnMessageReceived;
             webSocket.OnSendError += a => onSendError?.Invoke(a);
+#if UNITY_5_3_OR_NEWER
+            webSocket.OnClose += (a, b) => UnityNetworkManager.ActiveConnections.Remove(this);
+#endif
 
             networkMessageProcessThread = new Thread(PreProcessMessages);
             networkMessageProcessThread.Start();
@@ -763,6 +768,9 @@ namespace SpacetimeDB
                     {
                         Identity = identityToken.Identity;
                         onConnect?.Invoke(identityToken.Identity, identityToken.Token);
+#if UNITY_5_3_OR_NEWER
+                        UnityNetworkManager.ActiveConnections.Add(this);
+#endif
                     }
                     catch (Exception e)
                     {
