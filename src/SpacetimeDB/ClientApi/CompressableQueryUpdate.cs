@@ -7,13 +7,11 @@
 using System;
 using SpacetimeDB;
 
-namespace SpacetimeDB.Types
+namespace SpacetimeDB.ClientApi
 {
 	[SpacetimeDB.Type]
-	public partial class SetNameArgsStruct : IReducerArgs
-	{
-		string IReducerArgs.ReducerName => "set_name";
-
-		public string Name = "";
-	}
+	public partial record CompressableQueryUpdate : SpacetimeDB.TaggedEnum<(
+		SpacetimeDB.ClientApi.QueryUpdate Uncompressed,
+		byte[] Brotli
+	)>;
 }

@@ -47,14 +47,6 @@ public class SnapshotTests
         }
     }
 
-    class EncodedValueConverter : WriteOnlyJsonConverter<EncodedValue.Binary>
-    {
-        public override void Write(VerifyJsonWriter writer, EncodedValue.Binary value)
-        {
-            writer.WriteValue(value.Binary_);
-        }
-    }
-
     class TestLogger(Events events) : ISpacetimeDBLogger
     {
         public void Debug(string message)
@@ -124,7 +116,7 @@ public class SnapshotTests
         ulong energyQuantaUsed,
         ulong hostExecutionDuration,
         List<TableUpdate> updates,
-        EncodedValue? args
+        byte[]? args
     ) => new(new()
     {
         Timestamp = new Timestamp { Microseconds = timestamp },
@@ -139,7 +131,7 @@ public class SnapshotTests
         {
             RequestId = requestId,
             ReducerName = reducerName,
-            Args = args ?? new EncodedValue.Binary([])
+            Args = args ?? []
         },
         Status = new UpdateStatus.Committed(new()
         {
@@ -147,55 +139,73 @@ public class SnapshotTests
         })
     });
 
-    private static TableUpdate SampleUpdate(
+    private static TableUpdate SampleUpdate<T>(
         uint tableId,
         string tableName,
-        List<EncodedValue> inserts,
-        List<EncodedValue> deletes
-    ) => new()
+        List<T> inserts,
+        List<T> deletes
+    ) where T : IStructuralReadWrite => new()
     {
         TableId = tableId,
         TableName = tableName,
-        Inserts = inserts,
-        Deletes = deletes
+        NumRows = (ulong)(inserts.Count + deletes.Count),
+        Updates = [new CompressableQueryUpdate.Uncompressed(new QueryUpdate(
+            EncodeRowList<T>(deletes), EncodeRowList<T>(inserts)))]
     };
 
-    private static EncodedValue.Binary Encode<T>(in T value) where T : IStructuralReadWrite
+    private static BsatnRowList EncodeRowList<T>(in List<T> list) where T : IStructuralReadWrite
+    {
+        var offsets = new List<ulong>();
+        var stream = new MemoryStream();
+        var writer = new BinaryWriter(stream);
+        foreach (var elem in list)
+        {
+            offsets.Add((ulong)stream.Length);
+            elem.WriteFields(writer);
+        }
+        return new BsatnRowList
+        {
+            RowsData = stream.ToArray(),
+            SizeHint = new RowSizeHint.RowOffsets(offsets)
+        };
+    }
+
+    private static byte[] Encode<T>(in T value) where T : IStructuralReadWrite
     {
         var o = new MemoryStream();
         var w = new BinaryWriter(o);
         value.WriteFields(w);
-        return new EncodedValue.Binary(o.ToArray());
+        return o.ToArray();
     }
 
     private static TableUpdate SampleUserInsert(string identity, string? name, bool online) =>
-        SampleUpdate(4097, "User", [Encode(new User
+        SampleUpdate(4097, "User", [new User
         {
             Identity = Identity.From(Convert.FromBase64String(identity)),
             Name = name,
             Online = online
-        })], []);
+        }], []);
 
     private static TableUpdate SampleUserUpdate(string identity, string? oldName, string? newName, bool oldOnline, bool newOnline) =>
-        SampleUpdate(4097, "User", [Encode(new User
+        SampleUpdate(4097, "User", [new User
         {
             Identity = Identity.From(Convert.FromBase64String(identity)),
             Name = newName,
             Online = newOnline
-        })], [Encode(new User
+        }], [new User
         {
             Identity = Identity.From(Convert.FromBase64String(identity)),
             Name = oldName,
             Online = oldOnline
-        })]);
+        }]);
 
     private static TableUpdate SampleMessage(string identity, ulong sent, string text) =>
-        SampleUpdate(4098, "Message", [Encode(new Message
+        SampleUpdate(4098, "Message", [new Message
         {
             Sender = Identity.From(Convert.FromBase64String(identity)),
             Sent = sent,
             Text = text
-        })], []);
+        }], []);
 
     private static ServerMessage[] SampleDump() => [
         SampleId(
@@ -205,6 +215,9 @@ public class SnapshotTests
         ),
         SampleSubscriptionUpdate(
             1, 366, [SampleUserInsert("j5DMlKmWjfbSl7qmZQOok7HDSwsAJopRSJjdlUsNogs=", null, true)]
+        ),
+        SampleTransactionUpdate(0, "l0qzG1GPRtC1mwr+54q98tv0325gozLc6cNzq4vrzqY=", "Kwmeu5riP20rvCTNbBipLA==",
+            0, "unknown-reducer", 0, 40, [], null
         ),
         SampleTransactionUpdate(
             1718487763059031, "l0qzG1GPRtC1mwr+54q98tv0325gozLc6cNzq4vrzqY=", "Kwmeu5riP20rvCTNbBipLA==",
@@ -255,7 +268,12 @@ public class SnapshotTests
 
         Log.Current = new TestLogger(events);
 
-        var client = SpacetimeDBClient.instance;
+        var client =
+            DbConnection.Builder()
+            .WithUri("wss://spacetimedb.com")
+            .WithModuleName("example")
+            .OnConnect((conn, identity, token) => events.Add("OnConnect", new { identity, token }))
+            .Build();
 
         var sampleDumpParsed = SampleDump();
 
@@ -274,6 +292,7 @@ public class SnapshotTests
                         break;
                 }
                 using var output = new MemoryStream();
+                output.WriteByte(1); // Write compression tag.
                 using (var brotli = new BrotliStream(output, CompressionMode.Compress))
                 {
                     using var w = new BinaryWriter(brotli);
@@ -283,44 +302,33 @@ public class SnapshotTests
             }
         );
 
-        client.onBeforeSubscriptionApplied += () => events.Add("OnBeforeSubscriptionApplied");
-        client.onEvent += (ev) => events.Add("OnEvent", ev switch
-        {
-            ServerMessage.IdentityToken(var o) => o,
-            ServerMessage.InitialSubscription(var o) => o,
-            ServerMessage.TransactionUpdate(var o) => o,
-            ServerMessage.OneOffQueryResponse(var o) => o,
-            _ => throw new InvalidOperationException()
-        });
-        client.onIdentityReceived += (_authToken, identity, address) =>
-            events.Add("OnIdentityReceived", new { identity, address });
-        client.onSubscriptionApplied += () => events.Add("OnSubscriptionApplied");
+#pragma warning disable CS0612 // Using obsolete API
         client.onUnhandledReducerError += (exception) =>
             events.Add("OnUnhandledReducerError", exception);
+#pragma warning restore CS0612 // Using obsolete API
+        client.RemoteReducers.OnSendMessage += (eventContext, _text) =>
+            events.Add("OnSendMessage", eventContext);
+        client.RemoteReducers.OnSetName += (eventContext, _name) => events.Add("OnSetName", eventContext);
 
-        Reducer.OnSendMessageEvent += (reducerEvent, _text) =>
-            events.Add("OnSendMessage", reducerEvent);
-        Reducer.OnSetNameEvent += (reducerEvent, _name) => events.Add("OnSetName", reducerEvent);
-
-        User.OnDelete += (user, reducerEvent) =>
-            events.Add("OnDeleteUser", new { user, reducerEvent });
-        User.OnInsert += (user, reducerEvent) =>
-            events.Add("OnInsertUser", new { user, reducerEvent });
-        User.OnUpdate += (oldUser, newUser, reducerEvent) =>
+        client.RemoteTables.User.OnDelete += (eventContext, user) =>
+            events.Add("OnDeleteUser", new { eventContext, user });
+        client.RemoteTables.User.OnInsert += (eventContext, user) =>
+            events.Add("OnInsertUser", new { eventContext, user });
+        client.RemoteTables.User.OnUpdate += (eventContext, oldUser, newUser) =>
             events.Add(
                 "OnUpdateUser",
                 new
                 {
+                    eventContext,
                     oldUser,
-                    newUser,
-                    reducerEvent
+                    newUser
                 }
             );
 
-        Message.OnDelete += (message, reducerEvent) =>
-            events.Add("OnDeleteMessage", new { message, reducerEvent });
-        Message.OnInsert += (message, reducerEvent) =>
-            events.Add("OnInsertMessage", new { message, reducerEvent });
+        client.RemoteTables.Message.OnDelete += (eventContext, message) =>
+            events.Add("OnDeleteMessage", new { eventContext, message });
+        client.RemoteTables.Message.OnInsert += (eventContext, message) =>
+            events.Add("OnInsertMessage", new { eventContext, message });
 
         // Simulate receiving WebSocket messages.
         foreach (var sample in sampleDumpBinary)
@@ -330,7 +338,7 @@ public class SnapshotTests
             // Otherwise we'll get inconsistent output order between test reruns.
             while (!client.HasPreProcessedMessage) { }
             // Once the message is in the preprocessed queue, we can invoke Update() to handle events on the main thread.
-            client.Update();
+            client.FrameTick();
         }
 
         // Verify dumped events and the final client state.
@@ -340,8 +348,8 @@ public class SnapshotTests
                     Events = events,
                     FinalSnapshot = new
                     {
-                        User = User.Iter().ToList(),
-                        Message = Message.Iter().ToList()
+                        User = client.RemoteTables.User.Iter().ToList(),
+                        Message = client.RemoteTables.Message.Iter().ToList()
                     },
                     Stats = client.stats
                 }
@@ -349,11 +357,10 @@ public class SnapshotTests
             .AddExtraSettings(settings => settings.Converters.AddRange([
                 new EventsConverter(),
                 new TimestampConverter(),
-                new EnergyQuantaConverter(),
-                new EncodedValueConverter()
+                new EnergyQuantaConverter()
             ]))
-            .ScrubMember<TransactionUpdate>(x => x.CallerIdentity)
             .ScrubMember<TransactionUpdate>(x => x.Status)
-            .ScrubMember<ReducerEventBase>(x => x.Status);
+            .ScrubMember<DbContext<RemoteTables>>(x => x.Db)
+            .ScrubMember<EventContext>(x => x.Reducers);
     }
 }
