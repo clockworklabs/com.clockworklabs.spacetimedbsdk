@@ -37,6 +37,9 @@ namespace SpacetimeDB
                 throw new InvalidOperationException("Building DbConnection with a null nameOrAddress. Call WithModuleName() first.");
             }
             conn.Connect(token, uri, nameOrAddress);
+#if UNITY_5_3_OR_NEWER
+            UnityNetworkManager.ActiveConnections.Add(this);
+#endif
             return conn;
         }
 
@@ -768,9 +771,6 @@ namespace SpacetimeDB
                     {
                         Identity = identityToken.Identity;
                         onConnect?.Invoke(identityToken.Identity, identityToken.Token);
-#if UNITY_5_3_OR_NEWER
-                        UnityNetworkManager.ActiveConnections.Add(this);
-#endif
                     }
                     catch (Exception e)
                     {

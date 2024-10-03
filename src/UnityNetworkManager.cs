@@ -12,7 +12,7 @@ namespace SpacetimeDB
 	{
 		private static bool _alreadyInitialized;
 
-		public UnityNetworkManager()
+		public void Awake()
 		{
 			// Ensure that users don't create several UnityNetworkManager instances.
 			// We're using a global (static) list of active connections and we don't want several instances to walk over it several times.
