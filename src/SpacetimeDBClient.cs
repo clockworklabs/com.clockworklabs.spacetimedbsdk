@@ -38,7 +38,7 @@ namespace SpacetimeDB
             }
             conn.Connect(token, uri, nameOrAddress);
 #if UNITY_5_3_OR_NEWER
-            UnityNetworkManager.ActiveConnections.Add(this);
+            UnityNetworkManager.ActiveConnections.Add(conn);
 #endif
             return conn;
         }
