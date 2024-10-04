@@ -8,7 +8,7 @@ namespace SpacetimeDB
 {
 	// This class is only used in Unity projects.
 	// Attach this to a gameobject in your scene to use SpacetimeDB.
-	public class UnityNetworkManager : MonoBehaviour
+	public class SpacetimeDBNetworkManager : MonoBehaviour
 	{
 		private static bool _alreadyInitialized;
 
