@@ -34,6 +34,9 @@ namespace SpacetimeDB
                 throw new InvalidOperationException("Building DbConnection with a null nameOrAddress. Call WithModuleName() first.");
             }
             conn.Connect(token, uri, nameOrAddress);
+#if UNITY_5_3_OR_NEWER
+            UnityNetworkManager.ActiveConnections.Add(conn);
+#endif
             return conn;
         }
 
@@ -76,7 +79,9 @@ namespace SpacetimeDB
 
     public interface IDbConnection
     {
-        void Subscribe(ISubscriptionHandle handle, string query);
+        internal void Subscribe(ISubscriptionHandle handle, string[] querySqls);
+        void FrameTick();
+        void Disconnect();
     }
 
     public abstract class DbConnectionBase<DbConnection, Reducer> : IDbConnection
@@ -146,6 +151,9 @@ namespace SpacetimeDB
             webSocket = new WebSocket(options);
             webSocket.OnMessage += OnMessageReceived;
             webSocket.OnSendError += a => onSendError?.Invoke(a);
+#if UNITY_5_3_OR_NEWER
+            webSocket.OnClose += (a, b) => UnityNetworkManager.ActiveConnections.Remove(this);
+#endif
 
             networkMessageProcessThread = new Thread(PreProcessMessages);
             networkMessageProcessThread.Start();
@@ -803,7 +811,7 @@ namespace SpacetimeDB
             ));
         }
 
-        void IDbConnection.Subscribe(ISubscriptionHandle handle, string query)
+        void IDbConnection.Subscribe(ISubscriptionHandle handle, string[] querySqls)
         {
             if (!webSocket.IsConnected)
             {
@@ -817,7 +825,7 @@ namespace SpacetimeDB
                 new Subscribe
                 {
                     RequestId = id,
-                    QueryStrings = { query }
+                    QueryStrings = querySqls.ToList()
                 }
             ));
         }
