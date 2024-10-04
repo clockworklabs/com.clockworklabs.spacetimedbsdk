@@ -190,7 +190,7 @@ public class SnapshotTests
     }
 
     private static TableUpdate SampleUserInsert(string identity, string? name, bool online) =>
-        SampleUpdate(4097, "User", [new User
+        SampleUpdate(4097, "user", [new User
         {
             Identity = Identity.From(Convert.FromBase64String(identity)),
             Name = name,
@@ -198,7 +198,7 @@ public class SnapshotTests
         }], []);
 
     private static TableUpdate SampleUserUpdate(string identity, string? oldName, string? newName, bool oldOnline, bool newOnline) =>
-        SampleUpdate(4097, "User", [new User
+        SampleUpdate(4097, "user", [new User
         {
             Identity = Identity.From(Convert.FromBase64String(identity)),
             Name = newName,
@@ -211,7 +211,7 @@ public class SnapshotTests
         }]);
 
     private static TableUpdate SampleMessage(string identity, ulong sent, string text) =>
-        SampleUpdate(4098, "Message", [new Message
+        SampleUpdate(4098, "message", [new Message
         {
             Sender = Identity.From(Convert.FromBase64String(identity)),
             Sent = sent,
