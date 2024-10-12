@@ -4,10 +4,13 @@ using SpacetimeDB.ClientApi;
 using System;
 using System.Collections.Concurrent;
 using System.Linq;
+using System.Net.Sockets;
 using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Codice.Client.GameUI.Update;
+using UnityEngine;
 
 namespace SpacetimeDB
 {
@@ -19,7 +22,7 @@ namespace SpacetimeDB
 
         public delegate void CloseEventHandler(WebSocketCloseStatus? code, WebSocketError? error);
 
-        public delegate void ConnectErrorEventHandler(WebSocketError? error, string message);
+        public delegate void ConnectErrorEventHandler(Exception e);
         public delegate void SendErrorEventHandler(Exception e);
 
         public struct ConnectOptions
@@ -66,27 +69,79 @@ namespace SpacetimeDB
             {
                 Ws.Options.UseDefaultCredentials = true;
             }
-
+            
             try
             {
                 await Ws.ConnectAsync(url, source.Token);
-                if (OnConnect != null) dispatchQueue.Enqueue(() => OnConnect());
+                if (Ws.State == WebSocketState.Open)
+                {
+                    if (OnConnect != null)
+                    {
+                        dispatchQueue.Enqueue(() => OnConnect());
+                    }
+                }
+                else
+                {
+                    if (OnConnectError != null) 
+                    {
+                        dispatchQueue.Enqueue(() => OnConnectError(
+                            new Exception($"WebSocket connection failed. Current state: {Ws.State}")));
+                    }
+                    return;
+                }
+            }
+            catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.Success)
+            {
+                // Debug.LogError($"Error code: {ex} {ex.Message} {ex.ErrorCode} {ex.NativeErrorCode} {Ws.CloseStatus} {Ws.State} {ex.InnerException}");
+                // Debug.LogException(ex);
+                
+                // How can we get here:
+                // - When you go to connect and the server isn't running (port closed) - target machine actively refused
+                // - 404 - No module with at that module address instead of 101 upgrade
+                // - 401? - When the identity received by SpacetimeDB wasn't signed by its signing key
+                // - 400 - When the auth is malformed
+                
+                if (OnConnectError != null)
+                {
+                    // .net 6,7,8 has support for Ws.HttpStatusCode as long as you set
+                    // ClientWebSocketOptions.CollectHttpResponseDetails = true
+                    dispatchQueue.Enqueue(() => OnConnectError(new Exception("")));
+                }
+                
+
+                // var builder = new StringBuilder();
+                // builder.Append(
+                //     "WebSocketException occurred, but WebSocketErrorCode indicates success. This might be due to a network issue.");
+                // // Log.Info("");
+                // Log.Info($"Exception message: {ex.Message}");
+                // Log.Info($"Inner exception: {ex.InnerException?.Message}");
+                // Log.Exception(ex);
+                // if (OnConnectError != null)
+                // {
+                //     var message = ex.Message;
+                //     var code = ex.WebSocketErrorCode;
+                //     if (code == WebSocketError.NotAWebSocket)
+                //     {
+                //         // not a websocket happens when there is no module published under the address specified
+                //         message += " Did you forget to publish your module?";
+                //     }
+                //
+                //     dispatchQueue.Enqueue(() => OnConnectError(code, message));
+                // }
+            }
+            catch (WebSocketException ex)
+            {
+                Console.WriteLine($"WebSocket connection failed: {ex.WebSocketErrorCode}");
+                Console.WriteLine($"Exception message: {ex.Message}");
+            }
+            catch (SocketException ex)
+            {
+                // This might occur if the server is unreachable or the DNS lookup fails.
+                Console.WriteLine($"SocketException occurred: {ex.Message}");
             }
             catch (Exception ex)
             {
-                Log.Exception(ex);
-                if (OnConnectError != null)
-                {
-                    var message = ex.Message;
-                    var code = (ex as WebSocketException)?.WebSocketErrorCode;
-                    if (code == WebSocketError.NotAWebSocket)
-                    {
-                        // not a websocket happens when there is no module published under the address specified
-                        message += " Did you forget to publish your module?";
-                    }
-                    dispatchQueue.Enqueue(() => OnConnectError(code, message));
-                }
-                return;
+                Console.WriteLine($"Unexpected error: {ex.Message}");
             }
 
             while (Ws.State == WebSocketState.Open)
