@@ -38,7 +38,7 @@ public class GameManager : MonoBehaviour
     
     public static GameManager instance;
     public static Camera localCamera;
-    public static Dictionary<uint, PlayerController> playerIdToPlayerController =
+    public Dictionary<uint, PlayerController> playerIdToPlayerController =
         new Dictionary<uint, PlayerController>();
 
     public static Identity? localIdentity;
@@ -48,7 +48,6 @@ public class GameManager : MonoBehaviour
     {
         instance = this;
         Application.targetFrameRate = 60;
-        PlayerPrefs.DeleteAll();
         
         // Now that we’ve registered all our callbacks, lets connect to spacetimedb
         conn = DbConnection.Builder().OnConnect((_conn, identity, token) => {
