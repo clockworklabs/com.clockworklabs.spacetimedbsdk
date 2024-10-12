@@ -33,7 +33,7 @@ public class LeaderboardController : MonoBehaviour
     
     private void Update()
     {
-        var players = GameManager.playerIdToPlayerController.Values.Select(
+        var players = GameManager.instance.playerIdToPlayerController.Values.Select(
             a => (a, a.TotalMass())).OrderByDescending(a => a.Item2).Take(10);
 
         var index = 0;

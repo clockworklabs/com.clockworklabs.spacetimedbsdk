@@ -15,7 +15,7 @@ namespace SpacetimeDB.Types
 	{
 		public class CircleHandle : RemoteTableHandle<EventContext, Circle>
 		{
-			private static Dictionary<uint, Circle> EntityId_Index = new(16);
+			private Dictionary<uint, Circle> EntityId_Index = new(16);
 
 			public override void InternalInvokeValueInserted(IDatabaseRow row)
 			{
@@ -30,15 +30,18 @@ namespace SpacetimeDB.Types
 
 			public readonly ref struct EntityIdUniqueIndex
 			{
+				readonly CircleHandle Handle;
+				internal EntityIdUniqueIndex(CircleHandle handle) => Handle = handle;
+
 				public Circle? Find(uint value)
 				{
-					EntityId_Index.TryGetValue(value, out var r);
+					Handle.EntityId_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public EntityIdUniqueIndex EntityId => new();
+			public EntityIdUniqueIndex EntityId => new(this);
 
 			public class PlayerIdIndex
 			{
@@ -62,7 +65,7 @@ namespace SpacetimeDB.Types
 
 		public class CircleDecayTimerHandle : RemoteTableHandle<EventContext, CircleDecayTimer>
 		{
-			private static Dictionary<ulong, CircleDecayTimer> ScheduledId_Index = new(16);
+			private Dictionary<ulong, CircleDecayTimer> ScheduledId_Index = new(16);
 
 			public override void InternalInvokeValueInserted(IDatabaseRow row)
 			{
@@ -77,15 +80,18 @@ namespace SpacetimeDB.Types
 
 			public readonly ref struct ScheduledIdUniqueIndex
 			{
+				readonly CircleDecayTimerHandle Handle;
+				internal ScheduledIdUniqueIndex(CircleDecayTimerHandle handle) => Handle = handle;
+
 				public CircleDecayTimer? Find(ulong value)
 				{
-					ScheduledId_Index.TryGetValue(value, out var r);
+					Handle.ScheduledId_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public ScheduledIdUniqueIndex ScheduledId => new();
+			public ScheduledIdUniqueIndex ScheduledId => new(this);
 
 			internal CircleDecayTimerHandle()
 			{
@@ -98,7 +104,7 @@ namespace SpacetimeDB.Types
 
 		public class ConfigHandle : RemoteTableHandle<EventContext, Config>
 		{
-			private static Dictionary<uint, Config> Id_Index = new(16);
+			private Dictionary<uint, Config> Id_Index = new(16);
 
 			public override void InternalInvokeValueInserted(IDatabaseRow row)
 			{
@@ -113,15 +119,18 @@ namespace SpacetimeDB.Types
 
 			public readonly ref struct IdUniqueIndex
 			{
+				readonly ConfigHandle Handle;
+				internal IdUniqueIndex(ConfigHandle handle) => Handle = handle;
+
 				public Config? Find(uint value)
 				{
-					Id_Index.TryGetValue(value, out var r);
+					Handle.Id_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public IdUniqueIndex Id => new();
+			public IdUniqueIndex Id => new(this);
 
 			internal ConfigHandle()
 			{
@@ -134,7 +143,7 @@ namespace SpacetimeDB.Types
 
 		public class EntityHandle : RemoteTableHandle<EventContext, Entity>
 		{
-			private static Dictionary<uint, Entity> Id_Index = new(16);
+			private Dictionary<uint, Entity> Id_Index = new(16);
 
 			public override void InternalInvokeValueInserted(IDatabaseRow row)
 			{
@@ -149,15 +158,18 @@ namespace SpacetimeDB.Types
 
 			public readonly ref struct IdUniqueIndex
 			{
+				readonly EntityHandle Handle;
+				internal IdUniqueIndex(EntityHandle handle) => Handle = handle;
+
 				public Entity? Find(uint value)
 				{
-					Id_Index.TryGetValue(value, out var r);
+					Handle.Id_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public IdUniqueIndex Id => new();
+			public IdUniqueIndex Id => new(this);
 
 			internal EntityHandle()
 			{
@@ -170,7 +182,7 @@ namespace SpacetimeDB.Types
 
 		public class FoodHandle : RemoteTableHandle<EventContext, Food>
 		{
-			private static Dictionary<uint, Food> EntityId_Index = new(16);
+			private Dictionary<uint, Food> EntityId_Index = new(16);
 
 			public override void InternalInvokeValueInserted(IDatabaseRow row)
 			{
@@ -185,15 +197,18 @@ namespace SpacetimeDB.Types
 
 			public readonly ref struct EntityIdUniqueIndex
 			{
+				readonly FoodHandle Handle;
+				internal EntityIdUniqueIndex(FoodHandle handle) => Handle = handle;
+
 				public Food? Find(uint value)
 				{
-					EntityId_Index.TryGetValue(value, out var r);
+					Handle.EntityId_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public EntityIdUniqueIndex EntityId => new();
+			public EntityIdUniqueIndex EntityId => new(this);
 
 			internal FoodHandle()
 			{
@@ -206,7 +221,7 @@ namespace SpacetimeDB.Types
 
 		public class LoggedOutCircleHandle : RemoteTableHandle<EventContext, LoggedOutCircle>
 		{
-			private static Dictionary<uint, LoggedOutCircle> LoggedOutId_Index = new(16);
+			private Dictionary<uint, LoggedOutCircle> LoggedOutId_Index = new(16);
 
 			public override void InternalInvokeValueInserted(IDatabaseRow row)
 			{
@@ -221,15 +236,18 @@ namespace SpacetimeDB.Types
 
 			public readonly ref struct LoggedOutIdUniqueIndex
 			{
+				readonly LoggedOutCircleHandle Handle;
+				internal LoggedOutIdUniqueIndex(LoggedOutCircleHandle handle) => Handle = handle;
+
 				public LoggedOutCircle? Find(uint value)
 				{
-					LoggedOutId_Index.TryGetValue(value, out var r);
+					Handle.LoggedOutId_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public LoggedOutIdUniqueIndex LoggedOutId => new();
+			public LoggedOutIdUniqueIndex LoggedOutId => new(this);
 
 			public class PlayerIdIndex
 			{
@@ -253,7 +271,7 @@ namespace SpacetimeDB.Types
 
 		public class LoggedOutPlayerHandle : RemoteTableHandle<EventContext, LoggedOutPlayer>
 		{
-			private static Dictionary<SpacetimeDB.Identity, LoggedOutPlayer> Identity_Index = new(16);
+			private Dictionary<SpacetimeDB.Identity, LoggedOutPlayer> Identity_Index = new(16);
 
 			public override void InternalInvokeValueInserted(IDatabaseRow row)
 			{
@@ -268,15 +286,18 @@ namespace SpacetimeDB.Types
 
 			public readonly ref struct IdentityUniqueIndex
 			{
+				readonly LoggedOutPlayerHandle Handle;
+				internal IdentityUniqueIndex(LoggedOutPlayerHandle handle) => Handle = handle;
+
 				public LoggedOutPlayer? Find(SpacetimeDB.Identity value)
 				{
-					Identity_Index.TryGetValue(value, out var r);
+					Handle.Identity_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public IdentityUniqueIndex Identity => new();
+			public IdentityUniqueIndex Identity => new(this);
 
 			internal LoggedOutPlayerHandle()
 			{
@@ -289,7 +310,7 @@ namespace SpacetimeDB.Types
 
 		public class MoveAllPlayersTimerHandle : RemoteTableHandle<EventContext, MoveAllPlayersTimer>
 		{
-			private static Dictionary<ulong, MoveAllPlayersTimer> ScheduledId_Index = new(16);
+			private Dictionary<ulong, MoveAllPlayersTimer> ScheduledId_Index = new(16);
 
 			public override void InternalInvokeValueInserted(IDatabaseRow row)
 			{
@@ -304,15 +325,18 @@ namespace SpacetimeDB.Types
 
 			public readonly ref struct ScheduledIdUniqueIndex
 			{
+				readonly MoveAllPlayersTimerHandle Handle;
+				internal ScheduledIdUniqueIndex(MoveAllPlayersTimerHandle handle) => Handle = handle;
+
 				public MoveAllPlayersTimer? Find(ulong value)
 				{
-					ScheduledId_Index.TryGetValue(value, out var r);
+					Handle.ScheduledId_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public ScheduledIdUniqueIndex ScheduledId => new();
+			public ScheduledIdUniqueIndex ScheduledId => new(this);
 
 			internal MoveAllPlayersTimerHandle()
 			{
@@ -325,8 +349,8 @@ namespace SpacetimeDB.Types
 
 		public class PlayerHandle : RemoteTableHandle<EventContext, Player>
 		{
-			private static Dictionary<SpacetimeDB.Identity, Player> Identity_Index = new(16);
-			private static Dictionary<uint, Player> PlayerId_Index = new(16);
+			private Dictionary<SpacetimeDB.Identity, Player> Identity_Index = new(16);
+			private Dictionary<uint, Player> PlayerId_Index = new(16);
 
 			public override void InternalInvokeValueInserted(IDatabaseRow row)
 			{
@@ -343,27 +367,33 @@ namespace SpacetimeDB.Types
 
 			public readonly ref struct IdentityUniqueIndex
 			{
+				readonly PlayerHandle Handle;
+				internal IdentityUniqueIndex(PlayerHandle handle) => Handle = handle;
+
 				public Player? Find(SpacetimeDB.Identity value)
 				{
-					Identity_Index.TryGetValue(value, out var r);
+					Handle.Identity_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public IdentityUniqueIndex Identity => new();
+			public IdentityUniqueIndex Identity => new(this);
 
 			public readonly ref struct PlayerIdUniqueIndex
 			{
+				readonly PlayerHandle Handle;
+				internal PlayerIdUniqueIndex(PlayerHandle handle) => Handle = handle;
+
 				public Player? Find(uint value)
 				{
-					PlayerId_Index.TryGetValue(value, out var r);
+					Handle.PlayerId_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public PlayerIdUniqueIndex PlayerId => new();
+			public PlayerIdUniqueIndex PlayerId => new(this);
 
 			internal PlayerHandle()
 			{
@@ -376,7 +406,7 @@ namespace SpacetimeDB.Types
 
 		public class SpawnFoodTimerHandle : RemoteTableHandle<EventContext, SpawnFoodTimer>
 		{
-			private static Dictionary<ulong, SpawnFoodTimer> ScheduledId_Index = new(16);
+			private Dictionary<ulong, SpawnFoodTimer> ScheduledId_Index = new(16);
 
 			public override void InternalInvokeValueInserted(IDatabaseRow row)
 			{
@@ -391,15 +421,18 @@ namespace SpacetimeDB.Types
 
 			public readonly ref struct ScheduledIdUniqueIndex
 			{
+				readonly SpawnFoodTimerHandle Handle;
+				internal ScheduledIdUniqueIndex(SpawnFoodTimerHandle handle) => Handle = handle;
+
 				public SpawnFoodTimer? Find(ulong value)
 				{
-					ScheduledId_Index.TryGetValue(value, out var r);
+					Handle.ScheduledId_Index.TryGetValue(value, out var r);
 					return r;
 				}
 
 			}
 
-			public ScheduledIdUniqueIndex ScheduledId => new();
+			public ScheduledIdUniqueIndex ScheduledId => new(this);
 
 			internal SpawnFoodTimerHandle()
 			{

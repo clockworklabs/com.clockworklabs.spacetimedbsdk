@@ -38,7 +38,7 @@ public class GameManager : MonoBehaviour
 
     public static GameManager instance;
     public static Camera localCamera;
-    public static Dictionary<uint, PlayerController> playerIdToPlayerController =
+    public Dictionary<uint, PlayerController> playerIdToPlayerController =
         new Dictionary<uint, PlayerController>();
 
     public static Identity localIdentity = default;
