@@ -36,7 +36,10 @@ namespace SpacetimeDB
             }
             conn.Connect(token, uri, nameOrAddress, compression ?? Compression.Brotli);
 #if UNITY_5_3_OR_NEWER
-            SpacetimeDBNetworkManager.ActiveConnections.Add(conn);
+            if (!SpacetimeDBNetworkManager.ActiveConnections.Contains(conn)) 
+            {
+                SpacetimeDBNetworkManager.ActiveConnections.Add(conn);
+            }
 #endif
             return conn;
         }
@@ -584,6 +587,10 @@ namespace SpacetimeDB
             connectionClosed = true;
             webSocket.Close();
             _preProcessCancellationTokenSource.Cancel();
+            
+#if UNITY_5_3_OR_NEWER
+            SpacetimeDBNetworkManager.ActiveConnections.Remove(this);
+#endif
         }
 
         /// <summary>

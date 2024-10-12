@@ -1,6 +1,7 @@
 #if UNITY_5_3_OR_NEWER
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SpacetimeDB;
 using UnityEngine;
 
@@ -37,7 +38,14 @@ namespace SpacetimeDB
 		}
 
 		private void Update() => ForEachConnection(conn => conn.FrameTick());
-		private void OnDestroy() => ForEachConnection(conn => conn.Disconnect());
+		private void OnDestroy()
+		{
+			// Disconnecting this connection will cause it to remove itself from ActiveConnections
+			foreach(var conn in ActiveConnections.ToList()) 
+			{
+				conn.Disconnect();
+			}
+		}
 	}
 }
 #endif
