@@ -1,6 +1,7 @@
 #if UNITY_5_3_OR_NEWER
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using SpacetimeDB;
 using UnityEngine;
 
@@ -10,19 +11,19 @@ namespace SpacetimeDB
 	// Attach this to a gameobject in your scene to use SpacetimeDB.
 	public class SpacetimeDBNetworkManager : MonoBehaviour
 	{
-		private static bool _alreadyInitialized;
+		private static SpacetimeDBNetworkManager _instance;
 
 		public void Awake()
 		{
 			// Ensure that users don't create several SpacetimeDBNetworkManager instances.
 			// We're using a global (static) list of active connections and we don't want several instances to walk over it several times.
-			if (_alreadyInitialized)
+			if (_instance != null)
 			{
 				throw new InvalidOperationException("SpacetimeDBNetworkManager is a singleton and should only be attached once.");
 			}
 			else
 			{
-				_alreadyInitialized = true;
+				_instance = this;
 			}
 		}
 
@@ -37,7 +38,14 @@ namespace SpacetimeDB
 		}
 
 		private void Update() => ForEachConnection(conn => conn.FrameTick());
-		private void OnDestroy() => ForEachConnection(conn => conn.Disconnect());
+		private void OnDestroy()
+		{
+			// Disconnecting this connection will cause it to remove itself from ActiveConnections
+			foreach(var conn in ActiveConnections.ToList()) 
+			{
+				conn.Disconnect();
+			}
+		}
 	}
 }
 #endif
