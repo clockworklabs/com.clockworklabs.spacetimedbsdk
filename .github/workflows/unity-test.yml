@@ -70,8 +70,6 @@ jobs:
         run: |
           spacetime start &
           disown
-      - name: Stop
-        run: exit 1
       - uses: actions/cache@v3
         with:
           path: |
