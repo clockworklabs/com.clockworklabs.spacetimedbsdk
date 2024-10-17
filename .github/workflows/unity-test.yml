@@ -48,21 +48,19 @@ jobs:
           rustup default stable
       - name: Install SpacetimeDB CLI from specific branch
         run: |
-          # cd unity-tests
-          # git clone https://github.com/clockworklabs/SpacetimeDB.git
-          # cd SpacetimeDB
-          # git checkout ${{ steps.extract-branch.outputs.branch }}
-          # echo "Checked out branch: ${{ steps.extract-branch.outputs.branch }}"
-          # cargo build --release -p spacetimedb-cli
-          # sudo mv target/release/spacetime /usr/bin/spacetime
+          cd unity-tests
+          git clone https://github.com/clockworklabs/SpacetimeDB.git
+          cd SpacetimeDB
+          git checkout ${{ steps.extract-branch.outputs.branch }}
+          echo "Checked out branch: ${{ steps.extract-branch.outputs.branch }}"
+          cargo build --release -p spacetimedb-cli
+          sudo mv target/release/spacetime /usr/bin/spacetime
 
           # This tests the "currently released" version of SpacetimeDB (and is also much faster than building from scratch)
-          # - name: Install SpacetimeDB CLI v0.12.0-beta
-          # run: |
-          wget https://github.com/clockworklabs/SpacetimeDB/releases/download/v0.12.0-beta/spacetime.linux-amd64.tar.gz
-          tar xzvf spacetime.linux-amd64.tar.gz
-          sudo mv spacetime /usr/bin/spacetime
-          rm -f spacetime.linux-amd64.tar.gz
+          # wget https://github.com/clockworklabs/SpacetimeDB/releases/download/v0.12.0-beta/spacetime.linux-amd64.tar.gz
+          # tar xzvf spacetime.linux-amd64.tar.gz
+          # sudo mv spacetime /usr/bin/spacetime
+          # rm -f spacetime.linux-amd64.tar.gz
       - name: Generate client bindings
         run: |
           cd unity-tests/server
