@@ -81,7 +81,7 @@ jobs:
       - name: Publish module to SpacetimeDB
         run: |
           cd unity-tests/server 
-          spacetime publish -s local untitled-circle-game
+          bash ./publish.sh
       - uses: actions/cache@v3
         with:
           path: unity-tests/client/Library

@@ -75,3 +75,9 @@ obj~
 # This is used for local paths to SpacetimeDB packages.
 /nuget.config
 /nuget.config.meta
+
+# JetBrains
+.idea/
+
+# SpacetimeDB directory that may be created when running Unity testsuite
+SpacetimeDB/
