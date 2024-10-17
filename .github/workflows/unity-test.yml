@@ -3,7 +3,7 @@ name: Unity Test Suite
 on:
   push:
     branches:
-      - master
+      - staging
   pull_request:
 
 jobs:
