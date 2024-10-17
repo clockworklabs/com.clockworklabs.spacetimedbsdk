@@ -78,6 +78,3 @@ obj~
 
 # JetBrains
 .idea/
-
-# SpacetimeDB directory that may be created when running Unity testsuite
-SpacetimeDB/

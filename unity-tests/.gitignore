@@ -35,3 +35,6 @@ Temporary Items
 *.icloud
 
 # End of https://www.toptal.com/developers/gitignore/api/macos
+
+# SpacetimeDB repo used for the testsuite
+SpacetimeDB/

@@ -10,6 +10,6 @@ crate-type = ["cdylib"]
 
 [dependencies]
 # spacetimedb = "0.12.0"
-spacetimedb = { path = "../../SpacetimeDB/crates/bindings" }
+spacetimedb = { path = "../SpacetimeDB/crates/bindings" }
 log = "0.4"
 rand = "0.8.5"
