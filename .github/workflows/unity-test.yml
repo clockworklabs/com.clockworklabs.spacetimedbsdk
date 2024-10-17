@@ -103,9 +103,8 @@ jobs:
           # coverageOptions: generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;dontClear
           # artifactsPath: artifacts
         env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-          # UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
           # UNITY_VERSION: 2022.3.2f1
           # PROJECT_PATH: client
