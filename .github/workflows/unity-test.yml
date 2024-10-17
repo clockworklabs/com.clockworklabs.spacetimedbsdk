@@ -48,7 +48,7 @@ jobs:
           rustup default stable
       - name: Install SpacetimeDB CLI from specific branch
         run: |
-          cd unity-test
+          cd unity-tests
           git clone https://github.com/clockworklabs/SpacetimeDB.git
           cd SpacetimeDB
           git checkout ${{ steps.extract-branch.outputs.branch }}
@@ -64,7 +64,7 @@ jobs:
           # && rm -f spacetime.linux-amd64.tar.gz
       - name: Generate client bindings
         run: |
-          cd unity-test/server
+          cd unity-tests/server
           bash ./generate.sh -y
       - name: Start SpacetimeDB
         run: |
@@ -75,7 +75,7 @@ jobs:
       - uses: actions/cache@v3
         with:
           path: |
-            unity-test/server/target
+            unity-tests/server/target
             ~/.cargo
           key: server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
@@ -83,11 +83,11 @@ jobs:
             server-target-SpacetimeDBUnityTestsuite-
       - name: Publish module to SpacetimeDB
         run: |
-          cd unity-test/server 
+          cd unity-tests/server 
           spacetime publish -s local untitled-circle-game
       - uses: actions/cache@v3
         with:
-          path: unity-test/client/Library
+          path: unity-tests/client/Library
           key: Library-SpacetimeDBUnityTestsuite-Linux-x86
           restore-keys: |
             Library-SpacetimeDBUnityTestsuite-
@@ -96,7 +96,7 @@ jobs:
         uses: game-ci/unity-test-runner@v4
         with:
           unityVersion: 2022.3.32f1  # Adjust Unity version to a valid tag
-          projectPath: unity-test/client  # Path to the Unity project subdirectory
+          projectPath: unity-tests/client  # Path to the Unity project subdirectory
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           testMode: playmode
           useHostNetwork: true
