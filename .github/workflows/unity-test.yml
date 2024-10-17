@@ -13,6 +13,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # Grab the branch name from the PR description. If it's not found, master will be used instead.
+      - name: Extract SpacetimeDB branch name or PR link from PR description
+        id: extract-branch
+        if: github.event_name == 'pull_request'
+        run: |
+          description=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          ${{ github.event.pull_request.url }} | jq -r '.body')
+
+          # Check if description contains a branch name or a PR link
+          branch_or_pr=$(echo "$description" | grep -oP '(?<=SpacetimeDB branch name:\s).+')
+          echo "Branch or PR found: $branch_or_pr"
+
+          if [[ -z "$branch_or_pr" ]]; then
+            branch="master"
+          elif [[ "$branch_or_pr" =~ ^https://github.com/.*/pull/[0-9]+$ ]]; then
+            # If it's a PR link, extract the branch name from the PR
+            pr_number=$(echo "$branch_or_pr" | grep -oP '[0-9]+$')
+            branch=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/clockworklabs/SpacetimeDB/pulls/$pr_number | jq -r '.head.ref')
+          else
+            # It's already a branch name
+            branch="$branch_or_pr"
+          fi
+
+          echo "::set-output name=branch::$branch"
+          echo "Final branch name: $branch"
+
       - name: Install Rust toolchain
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
@@ -24,7 +51,8 @@ jobs:
           cd unity-test
           git clone https://github.com/clockworklabs/SpacetimeDB.git
           cd SpacetimeDB
-          git checkout v0.12.0-beta-hotfix2
+          git checkout ${{ steps.extract-branch.outputs.branch }}
+          echo "Checked out branch: ${{ steps.extract-branch.outputs.branch }}"
           cargo build --release -p spacetimedb-cli
           sudo mv target/release/spacetime /usr/bin/spacetime
           # This tests the "currently released" version of SpacetimeDB (and is also much faster than building from scratch)
@@ -42,6 +70,8 @@ jobs:
         run: |
           spacetime start &
           disown
+      - name: Stop
+        run: exit 1
       - uses: actions/cache@v3
         with:
           path: |

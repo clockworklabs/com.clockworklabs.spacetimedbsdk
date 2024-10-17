@@ -11,6 +11,11 @@
 ## Requires SpacetimeDB PRs
 *List any PRs here that are required for this SDK change to work*
 
+## Testsuite
+*If you would like to run against a specific SpacetimeDB branch in the testsuite, specify that here. This is a branch name, not a PR.*
+
+SpacetimeDB branch name:
+
 ## Testing
 *Write instructions for a test that you performed for this PR*
 
