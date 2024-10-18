@@ -1,0 +1,116 @@
+name: Unity Test Suite
+
+on:
+  push:
+    branches:
+      - staging
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # Grab the branch name from the PR description. If it's not found, master will be used instead.
+      - name: Extract SpacetimeDB branch name or PR link from PR description
+        id: extract-branch
+        if: github.event_name == 'pull_request'
+        run: |
+          description=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          ${{ github.event.pull_request.url }} | jq -r '.body')
+
+          # Check if description contains a branch name or a PR link
+          branch_or_pr=$(echo "$description" | grep -oP '(?<=SpacetimeDB branch name:\s).+')
+          echo "Branch or PR found: $branch_or_pr"
+
+          if [[ -z "$branch_or_pr" ]]; then
+            branch="master"
+          elif [[ "$branch_or_pr" =~ ^https://github.com/.*/pull/[0-9]+$ ]]; then
+            # If it's a PR link, extract the branch name from the PR
+            pr_number=$(echo "$branch_or_pr" | grep -oP '[0-9]+$')
+            branch=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/clockworklabs/SpacetimeDB/pulls/$pr_number | jq -r '.head.ref')
+          else
+            # It's already a branch name
+            branch="$branch_or_pr"
+          fi
+
+          echo "::set-output name=branch::$branch"
+          echo "Final branch name: $branch"
+      - name: Replace com.clockworklabs.spacetimedbsdk in manifest.json
+        run: |
+          if grep -q '"com.clockworklabs.spacetimedbsdk": "file:' unity-tests/client/Packages/manifest.json; then
+            echo "::warning::Local file path detected and replaced for package com.clockworklabs.spacetimedbsdk. Fix this before merging."
+          fi
+
+          sed -i 's#"com.clockworklabs.spacetimedbsdk":.*#"com.clockworklabs.spacetimedbsdk": "file:/home/runner/work/com.clockworklabs.spacetimedbsdk",#' unity-tests/client/Packages/manifest.json
+          cat unity-tests/client/Packages/manifest.json
+          ls /home/runner/work/com.clockworklabs.spacetimedbsdk
+      - name: Install Rust toolchain
+        run: |
+          curl https://sh.rustup.rs -sSf | sh -s -- -y
+          source $HOME/.cargo/env
+          rustup install stable
+          rustup default stable
+      - name: Install SpacetimeDB CLI from specific branch
+        run: |
+          cd unity-tests
+          git clone https://github.com/clockworklabs/SpacetimeDB.git
+          cd SpacetimeDB
+          git checkout ${{ steps.extract-branch.outputs.branch }}
+          echo "Checked out branch: ${{ steps.extract-branch.outputs.branch }}"
+          cargo build --release -p spacetimedb-cli
+          sudo mv target/release/spacetime /usr/bin/spacetime
+
+          # This tests the "currently released" version of SpacetimeDB (and is also much faster than building from scratch)
+          # wget https://github.com/clockworklabs/SpacetimeDB/releases/download/v0.12.0-beta/spacetime.linux-amd64.tar.gz
+          # tar xzvf spacetime.linux-amd64.tar.gz
+          # sudo mv spacetime /usr/bin/spacetime
+          # rm -f spacetime.linux-amd64.tar.gz
+      - name: Generate client bindings
+        run: |
+          cd unity-tests/server
+          bash ./generate.sh -y
+      - name: Start SpacetimeDB
+        run: |
+          spacetime start &
+          disown
+      - uses: actions/cache@v3
+        with:
+          path: |
+            unity-tests/server/target
+            ~/.cargo
+          key: server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-
+            server-target-SpacetimeDBUnityTestsuite-
+      - name: Publish module to SpacetimeDB
+        run: |
+          cd unity-tests/server 
+          bash ./publish.sh
+      - uses: actions/cache@v3
+        with:
+          path: unity-tests/client/Library
+          key: Library-SpacetimeDBUnityTestsuite-Linux-x86
+          restore-keys: |
+            Library-SpacetimeDBUnityTestsuite-
+            Library-
+      - name: Set up Unity
+        uses: game-ci/unity-test-runner@v4
+        with:
+          unityVersion: 2022.3.32f1  # Adjust Unity version to a valid tag
+          projectPath: unity-tests/client  # Path to the Unity project subdirectory
+          githubToken: ${{ secrets.GITHUB_TOKEN }}
+          testMode: playmode
+          useHostNetwork: true
+          # testMode: all  # Runs both Edit Mode and Play Mode tests
+          # coverageOptions: generateAdditionalMetrics;generateHtmlReport;generateBadgeReport;dontClear
+          # artifactsPath: artifacts
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          # UNITY_VERSION: 2022.3.2f1
+          # PROJECT_PATH: client
