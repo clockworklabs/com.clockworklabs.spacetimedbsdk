@@ -45,7 +45,7 @@ jobs:
             echo "::warning::Local file path detected and replaced for package com.clockworklabs.spacetimedbsdk. Fix this before merging."
           fi
 
-          sed -i 's#"com.clockworklabs.spacetimedbsdk":.*#"com.clockworklabs.spacetimedbsdk": "file:/home/runner/work/com.clockworklabs.spacetimedbsdk"#' unity-tests/client/Packages/manifest.json
+          sed -i 's#"com.clockworklabs.spacetimedbsdk":.*#"com.clockworklabs.spacetimedbsdk": "file:/home/runner/work/com.clockworklabs.spacetimedbsdk",#' unity-tests/client/Packages/manifest.json
       - name: Install Rust toolchain
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
