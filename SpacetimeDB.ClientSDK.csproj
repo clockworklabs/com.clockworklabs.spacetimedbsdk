@@ -28,7 +28,6 @@
   <!-- Package references -->
   <ItemGroup>
     <PackageReference Include="SpacetimeDB.BSATN.Runtime" Version="1.0.0-rc1" />
-
     <InternalsVisibleTo Include="SpacetimeDB.Tests" />
   </ItemGroup>
 
@@ -47,3 +46,4 @@
   </ItemGroup>
 
 </Project>
+
