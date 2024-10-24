@@ -45,14 +45,6 @@ jobs:
 
           echo "branch=$branch" >> $GITHUB_OUTPUT
           echo "Final branch name: $branch"
-
-      - name: Replace spacetimedb dependency in Cargo.toml
-        run: |
-          # Get the branch name from the environment variable
-          branch_name="${{ github.head_ref }}"
-          # Make sure we're using the correct bindings when building the module TODO
-          sed -i "s|spacetimedb.*=.*|spacetimedb = \{ path = \"../SpacetimeDB/crates/bindings\" \}|" unity-tests~/server/Cargo.toml
-          cat unity-tests~/server/Cargo.toml
       - name: Install Rust toolchain
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
