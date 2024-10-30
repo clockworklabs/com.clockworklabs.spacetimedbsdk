@@ -156,7 +156,7 @@ namespace SpacetimeDB
             webSocket.OnMessage += OnMessageReceived;
             webSocket.OnSendError += a => onSendError?.Invoke(a);
 #if UNITY_5_3_OR_NEWER
-            webSocket.OnClose += (a, b) => SpacetimeDBNetworkManager.ActiveConnections.Remove(this);
+            webSocket.OnClose += (e) => SpacetimeDBNetworkManager.ActiveConnections.Remove(this);
 #endif
 
             networkMessageProcessThread = new Thread(PreProcessMessages);
