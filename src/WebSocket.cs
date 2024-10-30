@@ -9,8 +9,6 @@ using System.Net.WebSockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using Codice.Client.GameUI.Update;
-using UnityEngine;
 
 namespace SpacetimeDB
 {
@@ -82,7 +80,7 @@ namespace SpacetimeDB
                 }
                 else
                 {
-                    if (OnConnectError != null) 
+                    if (OnConnectError != null)
                     {
                         dispatchQueue.Enqueue(() => OnConnectError(
                             new Exception($"WebSocket connection failed. Current state: {Ws.State}")));
