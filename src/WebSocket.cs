@@ -104,15 +104,14 @@ namespace SpacetimeDB
                     var message = "A WebSocketException occurred, even though the WebSocketErrorCode is \"Success\".\n"
                     + "This indicates that there was no native error information for the exception.\n"
                     + "Due to limitations in the .NET core version we do not have access to the HTTP status code returned by the request which would provide more info on the nature of the error.\n"
-                    + "This error could arise to a number of reasons:\n"
+                    + "This error could arise for a number of reasons:\n"
                     + "1. The target machine actively refused the connection.\n"
-                    + "2. The module address you are trying to connect to does not exist (404 NOT FOUND).\n"
-                    + "3. The identity received by SpacetimeDB was not signed by its signing key (400 BAD REQUEST).\n"
-                    + "4. The auth token is malformed (401 BAD REQUEST).\n"
+                    + "2. The module you are trying to connect to does not exist (404 NOT FOUND).\n"
+                    + "3. The auth token you sent to SpacetimeDB was not signed by the correct signing key (400 BAD REQUEST).\n"
+                    + "4. The auth token is malformed (400 BAD REQUEST).\n"
                     + "5. You are not authorized (401 UNAUTHORIZED).\n"
                     + "Did you forget to start the server or publish your module?\n"
                     + "Here are some values that might help you debug:\n"
-                    + $"Exception: {ex}\n"
                     + $"WebSocketErrorCode: {ex.WebSocketErrorCode}\n"
                     + $"InnerException: {ex.InnerException}\n"
                     + $"InnerException Message: {ex.InnerException?.Message}\n"
@@ -121,6 +120,7 @@ namespace SpacetimeDB
                     + $"NativeErrorCode: {ex.NativeErrorCode}\n"
                     + $"WebSocket CloseStatus: {Ws.CloseStatus}\n"
                     + $"WebSocket State: {Ws.State}\n"
+                    + $"Exception: {ex}"
                     ;
                     dispatchQueue.Enqueue(() => OnConnectError(new Exception(message)));
                 }
