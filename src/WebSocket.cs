@@ -163,7 +163,8 @@ namespace SpacetimeDB
                         }
                         if (OnClose != null)
                         {
-                            switch (receiveResult.CloseStatus) {
+                            switch (receiveResult.CloseStatus)
+                            {
                                 case WebSocketCloseStatus.NormalClosure:
                                     dispatchQueue.Enqueue(() => OnClose(null));
                                     break;
