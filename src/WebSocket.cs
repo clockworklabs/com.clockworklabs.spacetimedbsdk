@@ -20,7 +20,7 @@ namespace SpacetimeDB
 
         public delegate void MessageEventHandler(byte[] message, DateTime timestamp);
 
-        public delegate void CloseEventHandler(WebSocketCloseStatus? code, WebSocketError? error);
+        public delegate void CloseEventHandler(Exception? e);
 
         public delegate void ConnectErrorEventHandler(Exception e);
         public delegate void SendErrorEventHandler(Exception e);
@@ -92,56 +92,62 @@ namespace SpacetimeDB
             }
             catch (WebSocketException ex) when (ex.WebSocketErrorCode == WebSocketError.Success)
             {
-                // Debug.LogError($"Error code: {ex} {ex.Message} {ex.ErrorCode} {ex.NativeErrorCode} {Ws.CloseStatus} {Ws.State} {ex.InnerException}");
-                // Debug.LogException(ex);
-                
                 // How can we get here:
                 // - When you go to connect and the server isn't running (port closed) - target machine actively refused
                 // - 404 - No module with at that module address instead of 101 upgrade
                 // - 401? - When the identity received by SpacetimeDB wasn't signed by its signing key
                 // - 400 - When the auth is malformed
-                
                 if (OnConnectError != null)
                 {
                     // .net 6,7,8 has support for Ws.HttpStatusCode as long as you set
                     // ClientWebSocketOptions.CollectHttpResponseDetails = true
-                    dispatchQueue.Enqueue(() => OnConnectError(new Exception("")));
+                    var message = "A WebSocketException occurred, even though the WebSocketErrorCode is \"Success\".\n"
+                    + "This indicates that there was no native error information for the exception.\n"
+                    + "Due to limitations in the .NET core version we do not have access to the HTTP status code returned by the request which would provide more info on the nature of the error.\n"
+                    + "This error could arise to a number of reasons:\n"
+                    + "1. The target machine actively refused the connection.\n"
+                    + "2. The module address you are trying to connect to does not exist (404 NOT FOUND).\n"
+                    + "3. The identity received by SpacetimeDB was not signed by its signing key (400 BAD REQUEST).\n"
+                    + "4. The auth token is malformed (401 BAD REQUEST).\n"
+                    + "5. You are not authorized (401 UNAUTHORIZED).\n"
+                    + "Did you forget to start the server or publish your module?\n"
+                    + "Here are some values that might help you debug:\n"
+                    + $"Exception: {ex}\n"
+                    + $"WebSocketErrorCode: {ex.WebSocketErrorCode}\n"
+                    + $"InnerException: {ex.InnerException}\n"
+                    + $"InnerException Message: {ex.InnerException?.Message}\n"
+                    + $"Message: {ex.Message}\n"
+                    + $"ErrorCode: {ex.ErrorCode}\n"
+                    + $"NativeErrorCode: {ex.NativeErrorCode}\n"
+                    + $"WebSocket CloseStatus: {Ws.CloseStatus}\n"
+                    + $"WebSocket State: {Ws.State}\n"
+                    ;
+                    dispatchQueue.Enqueue(() => OnConnectError(new Exception(message)));
                 }
-                
-
-                // var builder = new StringBuilder();
-                // builder.Append(
-                //     "WebSocketException occurred, but WebSocketErrorCode indicates success. This might be due to a network issue.");
-                // // Log.Info("");
-                // Log.Info($"Exception message: {ex.Message}");
-                // Log.Info($"Inner exception: {ex.InnerException?.Message}");
-                // Log.Exception(ex);
-                // if (OnConnectError != null)
-                // {
-                //     var message = ex.Message;
-                //     var code = ex.WebSocketErrorCode;
-                //     if (code == WebSocketError.NotAWebSocket)
-                //     {
-                //         // not a websocket happens when there is no module published under the address specified
-                //         message += " Did you forget to publish your module?";
-                //     }
-                //
-                //     dispatchQueue.Enqueue(() => OnConnectError(code, message));
-                // }
             }
             catch (WebSocketException ex)
             {
-                Console.WriteLine($"WebSocket connection failed: {ex.WebSocketErrorCode}");
-                Console.WriteLine($"Exception message: {ex.Message}");
+                if (OnConnectError != null)
+                {
+                    var message = $"WebSocket connection failed: {ex.WebSocketErrorCode}\n"
+                    + $"Exception message: {ex.Message}\n";
+                    dispatchQueue.Enqueue(() => OnConnectError(new Exception(message)));
+                }
             }
             catch (SocketException ex)
             {
                 // This might occur if the server is unreachable or the DNS lookup fails.
-                Console.WriteLine($"SocketException occurred: {ex.Message}");
+                if (OnConnectError != null)
+                {
+                    dispatchQueue.Enqueue(() => OnConnectError(ex));
+                }
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Unexpected error: {ex.Message}");
+                if (OnConnectError != null)
+                {
+                    dispatchQueue.Enqueue(() => OnConnectError(ex));
+                }
             }
 
             while (Ws.State == WebSocketState.Open)
@@ -157,7 +163,44 @@ namespace SpacetimeDB
                             await Ws.CloseAsync(WebSocketCloseStatus.NormalClosure, string.Empty,
                             CancellationToken.None);
                         }
-                        if (OnClose != null) dispatchQueue.Enqueue(() => OnClose(receiveResult.CloseStatus, null));
+                        if (OnClose != null)
+                        {
+                            switch (receiveResult.CloseStatus) {
+                                case WebSocketCloseStatus.NormalClosure:
+                                    dispatchQueue.Enqueue(() => OnClose(null));
+                                    break;
+                                case WebSocketCloseStatus.EndpointUnavailable:
+                                    dispatchQueue.Enqueue(() => OnClose(new Exception("(1000) The connection has closed after the request was fulfilled.")));
+                                    break;
+                                case WebSocketCloseStatus.ProtocolError:
+                                    dispatchQueue.Enqueue(() => OnClose(new Exception("(1002) The client or server is terminating the connection because of a protocol error.")));
+                                    break;
+                                case WebSocketCloseStatus.InvalidMessageType:
+                                    dispatchQueue.Enqueue(() => OnClose(new Exception("(1003) The client or server is terminating the connection because it cannot accept the data type it received.")));
+                                    break;
+                                case WebSocketCloseStatus.Empty:
+                                    dispatchQueue.Enqueue(() => OnClose(new Exception("(1005) No error specified.")));
+                                    break;
+                                case WebSocketCloseStatus.InvalidPayloadData:
+                                    dispatchQueue.Enqueue(() => OnClose(new Exception("(1007) The client or server is terminating the connection because it has received data inconsistent with the message type.")));
+                                    break;
+                                case WebSocketCloseStatus.PolicyViolation:
+                                    dispatchQueue.Enqueue(() => OnClose(new Exception("(1008) The connection will be closed because an endpoint has received a message that violates its policy.")));
+                                    break;
+                                case WebSocketCloseStatus.MessageTooBig:
+                                    dispatchQueue.Enqueue(() => OnClose(new Exception("(1009) Message too big")));
+                                    break;
+                                case WebSocketCloseStatus.MandatoryExtension:
+                                    dispatchQueue.Enqueue(() => OnClose(new Exception("(1010) The client is terminating the connection because it expected the server to negotiate an extension.")));
+                                    break;
+                                case WebSocketCloseStatus.InternalServerError:
+                                    dispatchQueue.Enqueue(() => OnClose(new Exception("(1011) The connection will be closed by the server because of an error on the server.")));
+                                    break;
+                                default:
+                                    dispatchQueue.Enqueue(() => OnClose(new Exception("Unknown error")));
+                                    break;
+                            }
+                        }
                         return;
                     }
 
@@ -171,7 +214,10 @@ namespace SpacetimeDB
                             var closeMessage = $"Maximum message size: {MAXMessageSize} bytes.";
                             await Ws.CloseAsync(WebSocketCloseStatus.MessageTooBig, closeMessage,
                                 CancellationToken.None);
-                            if (OnClose != null) dispatchQueue.Enqueue(() => OnClose(WebSocketCloseStatus.MessageTooBig, null));
+                            if (OnClose != null)
+                            {
+                                dispatchQueue.Enqueue(() => OnClose(new Exception("(1009) Message too big")));
+                            }
                             return;
                         }
 
@@ -189,7 +235,7 @@ namespace SpacetimeDB
                 }
                 catch (WebSocketException ex)
                 {
-                    if (OnClose != null) dispatchQueue.Enqueue(() => OnClose(null, ex.WebSocketErrorCode));
+                    if (OnClose != null) dispatchQueue.Enqueue(() => OnClose(ex));
                     return;
                 }
             }
