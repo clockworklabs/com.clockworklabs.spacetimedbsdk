@@ -112,14 +112,14 @@ namespace SpacetimeDB
                     + "5. You are not authorized (401 UNAUTHORIZED).\n"
                     + "Did you forget to start the server or publish your module?\n"
                     + "Here are some values that might help you debug:\n"
-                    + $"WebSocketErrorCode: {ex.WebSocketErrorCode}\n"
-                    + $"InnerException: {ex.InnerException}\n"
-                    + $"InnerException Message: {ex.InnerException?.Message}\n"
                     + $"Message: {ex.Message}\n"
+                    + $"WebSocketErrorCode: {ex.WebSocketErrorCode}\n"
                     + $"ErrorCode: {ex.ErrorCode}\n"
                     + $"NativeErrorCode: {ex.NativeErrorCode}\n"
+                    + $"InnerException Message: {ex.InnerException?.Message}\n"
                     + $"WebSocket CloseStatus: {Ws.CloseStatus}\n"
                     + $"WebSocket State: {Ws.State}\n"
+                    + $"InnerException: {ex.InnerException}\n"
                     + $"Exception: {ex}"
                     ;
                     dispatchQueue.Enqueue(() => OnConnectError(new Exception(message)));
