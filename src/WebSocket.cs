@@ -69,7 +69,7 @@ namespace SpacetimeDB
             {
                 Ws.Options.UseDefaultCredentials = true;
             }
-            
+
             try
             {
                 await Ws.ConnectAsync(url, source.Token);
