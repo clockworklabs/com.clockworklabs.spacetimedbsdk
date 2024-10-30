@@ -15,7 +15,11 @@ jobs:
 
       - name: Checkout Submodules
         run: |
-          git submodule init
+          cd unity-tests~
+          git config remote.origin.url https://github.com/clockworklabs/com.clockworklabs.spacetimedbsdk
+          cd ..
+          git config -f .gitmodules submodule.unity-tests~.url https://github.com/clockworklabs/com.clockworklabs.spacetimedbsdk
+          git submodule sync
           git submodule update
 
       # Grab the branch name from the PR description. If it's not found, master will be used instead.
