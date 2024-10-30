@@ -20,6 +20,7 @@ jobs:
           cd ..
           git config -f .gitmodules submodule.unity-tests~.url https://github.com/clockworklabs/com.clockworklabs.spacetimedbsdk
           git submodule sync
+          git submodule init
           git submodule update
 
       # Grab the branch name from the PR description. If it's not found, master will be used instead.
