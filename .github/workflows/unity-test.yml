@@ -74,9 +74,9 @@ jobs:
           path: |
             unity-tests~/server/target
             ~/.cargo
-          key: server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-${{ runner.arch }}
+          key: server-target-SpacetimeDBUnityTestsuite-Linux-x86-Linux-X64
           restore-keys: |
-            server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-${{ runner.arch }}
+            server-target-SpacetimeDBUnityTestsuite-Linux-x86-Linux-X64
             server-target-SpacetimeDBUnityTestsuite-Linux-x86-
             server-target-SpacetimeDBUnityTestsuite-
           enableCrossOsArchive: false
