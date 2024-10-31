@@ -13,12 +13,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Force Submodule to use HTTPS instead of SSH
+      - name: Checkout submodule
         run: |
-          git submodule deinit -f --all
-          git config -f .gitmodules submodule.unity-tests~.url https://github.com/clockworklabs/SpacetimeDBCircleGame
-          git submodule sync --recursive
-          git submodule update --init --recursive
+          git submodule init
+          git submodule update
       # Grab the branch name from the PR description. If it's not found, master will be used instead.
       - name: Extract SpacetimeDB branch name or PR link from PR description
         id: extract-branch
