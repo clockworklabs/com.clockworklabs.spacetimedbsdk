@@ -71,17 +71,30 @@ jobs:
       - name: Cache Cargo target directory
         uses: actions/cache@v3
         with:
-          path: |
-            unity-tests~/server/target
-            ~/.cargo
-          key: server-target-SpacetimeDBUnityTestsuite-Linux-x86-Linux-X64
+          path: unity-tests~/server/target
+          key: server-target-SpacetimeDBUnityTestsuite-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('unity-tests~/server/Cargo.lock') }}
           restore-keys: |
-            server-target-SpacetimeDBUnityTestsuite-Linux-x86-Linux-X64
-            server-target-SpacetimeDBUnityTestsuite-Linux-x86-
+            server-target-SpacetimeDBUnityTestsuite-${{ runner.os }}-${{ runner.arch }}-
             server-target-SpacetimeDBUnityTestsuite-
-          enableCrossOsArchive: false
-          fail-on-cache-miss: false
-          lookup-only: false
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/registry
+          key: cargo-registry-${{ runner.os }}-${{ hashFiles('unity-tests~/server/Cargo.lock') }}
+          restore-keys: |
+            cargo-registry-${{ runner.os }}-
+            cargo-registry-
+
+      - name: Cache Cargo index
+        uses: actions/cache@v3
+        with:
+          path: ~/.cargo/git
+          key: cargo-index-${{ runner.os }}-${{ hashFiles('unity-tests~/server/Cargo.lock') }}
+          restore-keys: |
+            cargo-index-${{ runner.os }}-
+            cargo-index-
+
       - name: Install SpacetimeDB CLI from specific branch
         run: |
           cd unity-tests~
