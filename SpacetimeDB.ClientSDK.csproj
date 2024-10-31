@@ -37,13 +37,4 @@
     <None Update="README.md" Pack="true" PackagePath="" />
   </ItemGroup>
 
-  <!-- Explicitly include all .cs files except Unity-related scripts -->
-  <ItemGroup>
-    <Compile Include="src/**/*.cs" Exclude="unity-tests/client/Assets/**/*.cs" />
-
-    <!-- Optionally include Unity-related scripts for Unity builds -->
-    <Compile Include="unity-tests/client/Assets/**/*.cs" Condition="'$(BuildingUnity)' == 'true'" />
-  </ItemGroup>
-
 </Project>
-
