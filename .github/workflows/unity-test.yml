@@ -57,15 +57,24 @@ jobs:
           # Get the branch name from the environment variable
           branch_name="${{ github.head_ref }}"
           # Make sure we're using the correct bindings when building the module TODO
-          sed -i "s|spacetimedb.*=.*|spacetimedb = \{ path = \"../SpacetimeDB/crates/bindings\"\}|" unity-tests~/server/Cargo.toml
+          sed -i "s|spacetimedb.*=.*|spacetimedb = \{ path = \"../SpacetimeDB/crates/bindings\" \}|" unity-tests~/server/Cargo.toml
           cat unity-tests~/server/Cargo.toml
-          exit 1
       - name: Install Rust toolchain
         run: |
           curl https://sh.rustup.rs -sSf | sh -s -- -y
           source $HOME/.cargo/env
           rustup install stable
           rustup default stable
+
+      - uses: actions/cache@v3
+        with:
+          path: |
+            unity-tests~/server/target
+            ~/.cargo
+          key: server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-${{ hashFiles('unity-tests~/server/Cargo.lock') }}
+          restore-keys: |
+            server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-
+            server-target-SpacetimeDBUnityTestsuite-
 
       - name: Install SpacetimeDB CLI from specific branch
         run: |
@@ -92,16 +101,6 @@ jobs:
         run: |
           spacetime start &
           disown
-
-      - uses: actions/cache@v3
-        with:
-          path: |
-            unity-tests~/server/target
-            ~/.cargo
-          key: server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-${{ hashFiles('unity-tests~/server/Cargo.lock') }}
-          restore-keys: |
-            server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-
-            server-target-SpacetimeDBUnityTestsuite-
 
       - name: Publish module to SpacetimeDB
         run: |
