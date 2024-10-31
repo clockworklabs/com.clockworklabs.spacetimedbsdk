@@ -19,8 +19,6 @@
     <AssemblyVersion>1.0.0</AssemblyVersion>
     <Version>1.0.0-rc1</Version>
     <DefaultItemExcludes>$(DefaultItemExcludes);*~/**</DefaultItemExcludes>
-    <!-- Disable default compile items to prevent duplicate inclusion -->
-    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!-- We want to save DLLs for Unity which doesn't support NuGet. -->
     <RestorePackagesPath>packages</RestorePackagesPath>
   </PropertyGroup>
