@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
@@ -23,13 +23,12 @@
     <RestorePackagesPath>packages</RestorePackagesPath>
   </PropertyGroup>
 
-  <!-- Package references -->
   <ItemGroup>
     <PackageReference Include="SpacetimeDB.BSATN.Runtime" Version="1.0.0-rc1" />
+
     <InternalsVisibleTo Include="SpacetimeDB.Tests" />
   </ItemGroup>
 
-  <!-- Include non-code files -->
   <ItemGroup>
     <None Update="logo.png" Pack="true" PackagePath="" />
     <None Update="README.md" Pack="true" PackagePath="" />
