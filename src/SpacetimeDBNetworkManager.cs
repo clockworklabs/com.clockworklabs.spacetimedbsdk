@@ -10,7 +10,7 @@ namespace SpacetimeDB
     // Attach this to a GameObject in your scene to use SpacetimeDB.
     public class SpacetimeDBNetworkManager : MonoBehaviour
     {
-        private static SpacetimeDBNetworkManager? _instance;
+        internal static SpacetimeDBNetworkManager? _instance;
 
         public void Awake()
         {
@@ -26,23 +26,31 @@ namespace SpacetimeDB
             }
         }
 
-        internal static HashSet<IDbConnection> ActiveConnections = new();
+        private readonly List<IDbConnection> activeConnections = new();
 
-        private List<IDbConnection> cache = new List<IDbConnection>();
+        public bool AddConnection(IDbConnection conn)
+        {
+            if (activeConnections.Contains(conn))
+            {
+                return false;
+            }
+            activeConnections.Add(conn);
+            return true;
 
+        }
+
+        public bool RemoveConnection(IDbConnection conn)
+        {
+            return activeConnections.Remove(conn);
+        }
+        
         private void ForEachConnection(Action<IDbConnection> action)
         {
-            // TODO(jdetter): We're doing this for now because we can't break the API during a minor release but
-            // in the future we should just change ActiveConnections to be a list so that we can reverse-iterate
-            // through it.
-            cache.Clear();
-            cache.AddRange(ActiveConnections);
-
             // It's common to call disconnect from Update, which will then modify the ActiveConnections collection,
             // therefore we must reverse-iterate the list of connections.
-            for (var x = cache.Count - 1; x >= 0; x--)
+            for (var x = activeConnections.Count - 1; x >= 0; x--)
             {
-                action(cache[x]);
+                action(activeConnections[x]);
             }
         }
 
