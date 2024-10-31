@@ -68,16 +68,20 @@ jobs:
           rustup install stable
           rustup default stable
 
-      - uses: actions/cache@v3
+      - name: Cache Cargo target directory
+        uses: actions/cache@v3
         with:
           path: |
             unity-tests~/server/target
             ~/.cargo
-          key: server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-${{ hashFiles('unity-tests~/server/Cargo.lock') }}
+          key: server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-${{ runner.arch }}
           restore-keys: |
-            server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-
+            server-target-SpacetimeDBUnityTestsuite-Linux-x86-${{ runner.os }}-${{ runner.arch }}
+            server-target-SpacetimeDBUnityTestsuite-Linux-x86-
             server-target-SpacetimeDBUnityTestsuite-
-
+          enableCrossOsArchive: false
+          fail-on-cache-miss: false
+          lookup-only: false
       - name: Install SpacetimeDB CLI from specific branch
         run: |
           cd unity-tests~
