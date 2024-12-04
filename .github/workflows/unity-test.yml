@@ -11,14 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          submodules: true
 
-      - name: Checkout submodule
-        run: |
-          git submodule init
-          git submodule update
-          cd unity-tests~
-          git checkout jdetter/circle-game-testsuite
       # Grab the branch name from the PR description. If it's not found, master will be used instead.
       - name: Extract SpacetimeDB branch name or PR link from PR description
         id: extract-branch
@@ -146,4 +142,3 @@ jobs:
           UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
           UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
           UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
-
