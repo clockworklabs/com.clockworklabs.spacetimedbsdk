@@ -19,10 +19,9 @@ jobs:
       - name: Extract SpacetimeDB branch name or PR link from PR description
         id: extract-branch
         if: github.event_name == 'pull_request'
+        env:
+          description: ${{ github.event.pull_request.body }}
         run: |
-          description=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-          ${{ github.event.pull_request.url }} | jq -r '.body')
-
           # Check if description contains a branch name or a PR link
           branch_or_pr=$(echo "$description" | grep -oP '(?<=SpacetimeDB branch name:\s).+')
           echo "Branch or PR found: $branch_or_pr"
