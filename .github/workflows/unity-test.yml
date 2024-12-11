@@ -41,6 +41,14 @@ jobs:
           echo "branch=$branch" >> $GITHUB_OUTPUT
           echo "Final branch name: $branch"
 
+      - name: Replace com.clockworklabs.spacetimedbsdk in manifest.json
+        run: |
+          # Get the branch name from the environment variable
+          branch_name="${{ github.head_ref }}"
+          # Replace any reference to com.clockworklabs.spacetimedbsdk with the correct GitHub URL using the current branch
+          sed -i "s|\"com.clockworklabs.spacetimedbsdk\":.*|\"com.clockworklabs.spacetimedbsdk\": \"https://github.com/clockworklabs/com.clockworklabs.spacetimedbsdk.git#$branch_name\",|" unity-tests~/client/Packages/manifest.json
+          cat unity-tests~/client/Packages/manifest.json
+
       - name: Replace spacetimedb dependency in Cargo.toml
         run: |
           # Get the branch name from the environment variable
