@@ -59,7 +59,7 @@ namespace SpacetimeDB
 
         public DbConnectionBuilder<DbConnection, Reducer> WithToken(string? token)
         {
-            token = token;
+            this.token = token;
             return this;
         }
 
