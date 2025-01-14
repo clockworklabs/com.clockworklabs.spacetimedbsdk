@@ -1,4 +1,4 @@
-name: Unity Test Suite
+name: Test Suite
 
 on:
   push:
@@ -65,16 +65,16 @@ jobs:
           # See https://learn.microsoft.com/en-us/nuget/reference/nuget-config-file for more info on the config file.
           ./tools~/write-nuget-config.sh SpacetimeDB~
 
-      - name: Restore dependencies
+      - name: Restore NuGet dependencies
         run: dotnet restore
 
-      - name: Build everything
+      - name: Build .NET project
         run: dotnet build --no-restore -warnaserror
 
-      - name: Run tests
+      - name: Run .NET tests
         run: dotnet test --no-build
 
-      - name: Verify formatting
+      - name: Verify C# formatting
         run: dotnet format --no-restore --verify-no-changes SpacetimeDB.ClientSDK.sln
 
       # Now, setup the Unity tests.
@@ -97,19 +97,18 @@ jobs:
           cat Cargo.toml
 
       - name: Install Rust toolchain
-        uses: mkroening/rust-toolchain-toml@v1.3.1
-        with:
-          toolchain-file: SpacetimeDB~/rust-toolchain.toml
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: |
-            unity-tests~/server
-            SpacetimeDB~
+          workspaces: unity-tests~/server
 
       - name: Install SpacetimeDB CLI from the local checkout
         run: cargo install --path SpacetimeDB~/crates/cli
+        env:
+          # Share the target directory with our local project to avoid rebuilding same SpacetimeDB crates twice.
+          CARGO_TARGET_DIR: unity-tests~/server/target
 
       - name: Generate client bindings
         working-directory: unity-tests~/server
