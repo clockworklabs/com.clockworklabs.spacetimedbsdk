@@ -81,8 +81,9 @@ jobs:
       - name: Patch com.clockworklabs.spacetimedbsdk dependency in manifest.json
         working-directory: unity-tests~/client/Packages
         run: |
-          # Replace the com.clockworklabs.spacetimedbsdk dependency with the current checkout
-          yq e -i '.dependencies["com.clockworklabs.spacetimedbsdk"] = "file:../../.."' manifest.json
+          # Replace the com.clockworklabs.spacetimedbsdk dependency with the current branch.
+          # TODO: find out why pointing to a local directory doesn't work - is it because Unity CI action uses Docker?
+          yq e -i '.dependencies["com.clockworklabs.spacetimedbsdk"] = "https://github.com/clockworklabs/com.clockworklabs.spacetimedbsdk.git#${{ github.head_ref }}"' manifest.json
           cat manifest.json
 
       - name: Patch spacetimedb dependency in Cargo.toml
