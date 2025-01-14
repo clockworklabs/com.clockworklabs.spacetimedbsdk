@@ -82,7 +82,7 @@ jobs:
         working-directory: unity-tests~/client/Packages
         run: |
           # Replace the com.clockworklabs.spacetimedbsdk dependency with the current checkout
-          yq e -i '.dependencies["com.clockworklabs.spacetimedbsdk"] = "file:${{ github.workspace }}"' manifest.json
+          yq e -i '.dependencies["com.clockworklabs.spacetimedbsdk"] = "file:../../.."' manifest.json
           cat manifest.json
 
       - name: Patch spacetimedb dependency in Cargo.toml
