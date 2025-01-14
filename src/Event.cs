@@ -64,7 +64,8 @@ namespace SpacetimeDB
 
         public SubscriptionHandle<EventContext> Subscribe(params string[] querySqls) => new(conn, Applied, Error, querySqls);
 
-        public void SubscribeToAllTables() {
+        public void SubscribeToAllTables()
+        {
             Subscribe("SELECT * FROM *");
         }
     }
