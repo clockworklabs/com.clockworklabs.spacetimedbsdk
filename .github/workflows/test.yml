@@ -105,7 +105,7 @@ jobs:
           workspaces: unity-tests~/server
 
       - name: Install SpacetimeDB CLI from the local checkout
-        run: cargo install --path SpacetimeDB~/crates/cli --locked
+        run: cargo install --path SpacetimeDB~/crates/cli --locked --message-format=short
         env:
           # Share the target directory with our local project to avoid rebuilding same SpacetimeDB crates twice.
           CARGO_TARGET_DIR: unity-tests~/server/target
