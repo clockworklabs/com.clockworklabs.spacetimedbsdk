@@ -15,14 +15,9 @@ jobs:
         with:
           submodules: true
 
-      - name: Check Unity meta files
-        uses: DeNA/unity-meta-check@v3
-        with:
-          enable_pr_comment: ${{ github.event_name == 'pull_request' }}
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+      # Grab the SpacetimeDB branch name from the PR description. If it's not found, master will be used instead.
+      # We'll use this branch name for any integration tests with SpacetimeDB.
 
-      # Grab the branch name from the PR description. If it's not found, master will be used instead.
       - name: Extract SpacetimeDB branch name or PR link from PR description
         id: extract-branch
         if: github.event_name == 'pull_request'
@@ -48,75 +43,91 @@ jobs:
           echo "branch=$branch" >> $GITHUB_OUTPUT
           echo "Final branch name: $branch"
 
-      - name: Replace com.clockworklabs.spacetimedbsdk in manifest.json
-        run: |
-          # Get the branch name from the environment variable
-          branch_name="${{ github.head_ref }}"
-          # Replace any reference to com.clockworklabs.spacetimedbsdk with the correct GitHub URL using the current branch
-          sed -i "s|\"com.clockworklabs.spacetimedbsdk\":.*|\"com.clockworklabs.spacetimedbsdk\": \"https://github.com/clockworklabs/com.clockworklabs.spacetimedbsdk.git#$branch_name\",|" unity-tests~/client/Packages/manifest.json
-          cat unity-tests~/client/Packages/manifest.json
+      - name: Checkout SpacetimeDB
+        uses: actions/checkout@v4
+        with:
+          repository: clockworklabs/SpacetimeDB
+          ref: ${{ steps.extract-branch.outputs.branch }}
+          submodules: true
+          path: SpacetimeDB~
 
-      - name: Replace spacetimedb dependency in Cargo.toml
+      # Run cheap .NET tests first. If those fail, no need to run expensive Unity tests.
+
+      - name: Override NuGet packages
         run: |
-          # Get the branch name from the environment variable
-          branch_name="${{ github.head_ref }}"
-          # Make sure we're using the correct bindings when building the module TODO
-          sed -i "s|spacetimedb.*=.*|spacetimedb = \{ path = \"../SpacetimeDB/crates/bindings\" \}|" unity-tests~/server/Cargo.toml
-          cat unity-tests~/server/Cargo.toml
+          dotnet pack SpacetimeDB~/crates/bindings-csharp/BSATN.Runtime
+
+          # Write out the nuget config file to `nuget.config`. This causes the spacetimedb-csharp-sdk repository
+          # to be aware of the local versions of the `bindings-csharp` packages in SpacetimeDB, and use them if
+          # available. Otherwise, `spacetimedb-csharp-sdk` will use the NuGet versions of the packages.
+          # This means that (if version numbers match) we will test the local versions of the C# packages, even
+          # if they're not pushed to NuGet.
+          # See https://learn.microsoft.com/en-us/nuget/reference/nuget-config-file for more info on the config file.
+          ./tools~/write-nuget-config.sh SpacetimeDB~
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build everything
+        run: dotnet build --no-restore -warnaserror
+
+      - name: Run tests
+        run: dotnet test --no-build
+
+      - name: Verify formatting
+        run: dotnet format --no-restore --verify-no-changes SpacetimeDB.ClientSDK.sln
+
+      # Now, setup the Unity tests.
+
+      - name: Patch com.clockworklabs.spacetimedbsdk dependency in manifest.json
+        working-directory: unity-tests~/client/Packages
+        run: |
+          # Replace the com.clockworklabs.spacetimedbsdk dependency with the current checkout
+          yq e -i '.dependencies["com.clockworklabs.spacetimedbsdk"] = "file:${{ github.workspace }}"' manifest.json
+          cat manifest.json
+
+      - name: Patch spacetimedb dependency in Cargo.toml
+        working-directory: unity-tests~/server
+        run: |
+          cat << EOF >> Cargo.toml
+
+          [patch.crates-io]
+          spacetimedb = { path = "${{ github.workspace }}/SpacetimeDB~/crates/bindings" }
+          EOF
+          cat Cargo.toml
+
       - name: Install Rust toolchain
-        run: |
-          curl https://sh.rustup.rs -sSf | sh -s -- -y
-          source $HOME/.cargo/env
-          rustup install stable
-          rustup default stable
-
-      - name: Cache Cargo target directory
-        uses: actions/cache@v3
+        uses: mkroening/rust-toolchain-toml@v1.3.1
         with:
-          path: unity-tests~/server/target
-          key: server-target-SpacetimeDBUnityTestsuite-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('unity-tests~/server/Cargo.lock') }}
-          restore-keys: |
-            server-target-SpacetimeDBUnityTestsuite-${{ runner.os }}-${{ runner.arch }}-
-            server-target-SpacetimeDBUnityTestsuite-
+          toolchain-file: SpacetimeDB~/rust-toolchain.toml
 
-      - name: Cache Cargo registry
-        uses: actions/cache@v3
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
         with:
-          path: ~/.cargo/registry
-          key: cargo-registry-${{ runner.os }}-${{ hashFiles('unity-tests~/server/Cargo.lock') }}
-          restore-keys: |
-            cargo-registry-${{ runner.os }}-
-            cargo-registry-
+          workspaces: |
+            unity-tests~/server
+            SpacetimeDB~
 
-      - name: Cache Cargo index
-        uses: actions/cache@v3
-        with:
-          path: ~/.cargo/git
-          key: cargo-index-${{ runner.os }}-${{ hashFiles('unity-tests~/server/Cargo.lock') }}
-          restore-keys: |
-            cargo-index-${{ runner.os }}-
-            cargo-index-
-
-      - name: Install SpacetimeDB CLI from specific branch
-        run: |
-          cd unity-tests~
-          git clone https://github.com/clockworklabs/SpacetimeDB.git
-          cd SpacetimeDB
-          # Sanitize the branch name by trimming any newlines or spaces
-          branch_name=$(echo "${{ steps.extract-branch.outputs.branch }}" | tr -d '[:space:]')
-          # If the branch name is not found, default to master
-          if [ -z "$branch_name" ]; then
-            branch_name="master"
-          fi
-          git checkout "$branch_name"
-          echo "Checked out branch: $branch_name"
-          cargo build --release -p spacetimedb-cli
-          sudo mv target/release/spacetime /usr/bin/spacetime
+      - name: Install SpacetimeDB CLI from the local checkout
+        run: cargo install --path SpacetimeDB~/crates/cli
 
       - name: Generate client bindings
+        working-directory: unity-tests~/server
+        run: bash ./generate.sh -y
+
+      - name: Check for changes
         run: |
-          cd unity-tests~/server
-          bash ./generate.sh -y
+          git diff --exit-code unity-tests~/client/Assets/Scripts/autogen || {
+              echo "Error: Bindings are dirty. Please generate bindings again and commit them to this branch."
+              exit 1
+          }
+
+      - name: Check Unity meta files
+        uses: DeNA/unity-meta-check@v3
+        with:
+          enable_pr_comment: ${{ github.event_name == 'pull_request' }}
+        env:
+          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
 
       - name: Start SpacetimeDB
         run: |
@@ -124,9 +135,8 @@ jobs:
           disown
 
       - name: Publish module to SpacetimeDB
-        run: |
-          cd unity-tests~/server
-          bash ./publish.sh
+        working-directory: unity-tests~/server
+        run: bash ./publish.sh
 
       - uses: actions/cache@v3
         with:
