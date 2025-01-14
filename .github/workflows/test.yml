@@ -48,7 +48,6 @@ jobs:
         with:
           repository: clockworklabs/SpacetimeDB
           ref: ${{ steps.extract-branch.outputs.branch }}
-          submodules: true
           path: SpacetimeDB~
 
       # Run cheap .NET tests first. If those fail, no need to run expensive Unity tests.
@@ -89,11 +88,7 @@ jobs:
       - name: Patch spacetimedb dependency in Cargo.toml
         working-directory: unity-tests~/server
         run: |
-          cat << EOF >> Cargo.toml
-
-          [patch.crates-io]
-          spacetimedb = { path = "${{ github.workspace }}/SpacetimeDB~/crates/bindings" }
-          EOF
+          sed -i "s|spacetimedb *=.*|spacetimedb = \{ path = \"${{ github.workspace }}/SpacetimeDB~/crates/bindings\" \}|" Cargo.toml
           cat Cargo.toml
 
       - name: Install Rust toolchain
@@ -103,6 +98,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: unity-tests~/server
+          shared-key: UnityTestServer
 
       - name: Install SpacetimeDB CLI from the local checkout
         run: cargo install --path SpacetimeDB~/crates/cli --locked --message-format=short
