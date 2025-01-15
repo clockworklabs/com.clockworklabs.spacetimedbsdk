@@ -136,7 +136,7 @@ jobs:
             Library-SpacetimeDBUnityTestsuite-
             Library-
 
-      - name: Set up Unity
+      - name: Run Unity tests
         uses: game-ci/unity-test-runner@v4
         with:
           unityVersion: 2022.3.32f1  # Adjust Unity version to a valid tag
