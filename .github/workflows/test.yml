@@ -73,7 +73,7 @@ jobs:
       # Now, setup the Unity tests.
 
       - name: Patch spacetimedb dependency in Cargo.toml
-        working-directory: unity-tests~/server
+        working-directory: unity-tests~/server-rust
         run: |
           sed -i "s|spacetimedb *=.*|spacetimedb = \{ path = \"../../SpacetimeDB~/crates/bindings\" \}|" Cargo.toml
           cat Cargo.toml
@@ -84,7 +84,7 @@ jobs:
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: unity-tests~/server
+          workspaces: unity-tests~/server-rust
           shared-key: UnityTestServer
 
       - name: Install SpacetimeDB CLI from the local checkout
@@ -95,10 +95,10 @@ jobs:
           ln -s $HOME/.cargo/bin/spacetimedb-cli $HOME/.cargo/bin/spacetime
         env:
           # Share the target directory with our local project to avoid rebuilding same SpacetimeDB crates twice.
-          CARGO_TARGET_DIR: unity-tests~/server/target
+          CARGO_TARGET_DIR: unity-tests~/server-rust/target
 
       - name: Generate client bindings
-        working-directory: unity-tests~/server
+        working-directory: unity-tests~/server-rust
         run: bash ./generate.sh -y
 
       - name: Check for changes
@@ -121,7 +121,7 @@ jobs:
           disown
 
       - name: Publish module to SpacetimeDB
-        working-directory: unity-tests~/server
+        working-directory: unity-tests~/server-rust
         run: bash ./publish.sh
 
       - uses: actions/cache@v3

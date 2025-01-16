@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Net.WebSockets;
 using System.Threading;
 using SpacetimeDB;
+using SpacetimeDB.ClientApi;
 using SpacetimeDB.Types;
 
 const string HOST = "http://localhost:3000";
@@ -135,9 +137,28 @@ void OnConnect(DbConnection conn, Identity identity, string authToken)
     local_identity = identity;
     AuthToken.SaveToken(authToken);
 
-    conn.SubscriptionBuilder()
-        .OnApplied(OnSubscriptionApplied)
-        .Subscribe("SELECT * FROM user", "SELECT * FROM message");
+    var subscriptions = 0;
+    SubscriptionBuilder<EventContext>.Callback waitForSubscriptions = (EventContext ctx) =>
+    {
+        // Note: callbacks are always invoked on the main thread, so you don't need to
+        // worry about thread synchronization or anything like that.
+        subscriptions += 1;
+
+        if (subscriptions == 2)
+        {
+            OnSubscriptionApplied(ctx);
+        }
+    };
+
+    var userSubscription = conn.SubscriptionBuilder()
+        .OnApplied(waitForSubscriptions)
+        .Subscribe("SELECT * FROM user");
+    var messageSubscription = conn.SubscriptionBuilder()
+        .OnApplied(waitForSubscriptions)
+        .Subscribe("SELECT * FROM message");
+
+    //conn.SubscriptionBuilder().OnApplied(OnSubscriptionApplied).SubscribeToAllTables();
+
 }
 
 void OnConnectError(Exception e)
