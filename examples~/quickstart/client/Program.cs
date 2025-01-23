@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Threading;
 using SpacetimeDB;
-using SpacetimeDB.ClientApi;
 using SpacetimeDB.Types;
 
 const string HOST = "http://localhost:3000";
@@ -157,7 +153,8 @@ void OnConnect(DbConnection conn, Identity identity, string authToken)
         .OnApplied(waitForSubscriptions)
         .Subscribe("SELECT * FROM message");
 
-    //conn.SubscriptionBuilder().OnApplied(OnSubscriptionApplied).SubscribeToAllTables();
+    // You can also use SubscribeToAllTables, but it should be avoided if you have any large tables:
+    // conn.SubscriptionBuilder().OnApplied(OnSubscriptionApplied).SubscribeToAllTables();
 
 }
 

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Runtime.Serialization;
-using System.Security.Authentication.ExtendedProtection;
 using SpacetimeDB.ClientApi;
 
 namespace SpacetimeDB
