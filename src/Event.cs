@@ -142,7 +142,7 @@ namespace SpacetimeDB
         {
             get
             {
-                return state is SubscriptionState.Ended;
+                return state is SubscriptionState.Active || state is SubscriptionState.LegacyActive;
             }
         }
 
