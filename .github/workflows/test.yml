@@ -93,6 +93,8 @@ jobs:
           cargo install --path SpacetimeDB~/crates/standalone --locked --message-format=short
           # Add a handy alias using the old binary name, so that we don't have to rewrite all scripts (incl. in submodules).
           ln -s $HOME/.cargo/bin/spacetimedb-cli $HOME/.cargo/bin/spacetime
+          # Clear any existing information
+          spacetime server clear -y
         env:
           # Share the target directory with our local project to avoid rebuilding same SpacetimeDB crates twice.
           CARGO_TARGET_DIR: unity-tests~/server-rust/target
@@ -122,7 +124,9 @@ jobs:
 
       - name: Publish module to SpacetimeDB
         working-directory: unity-tests~/server-rust
-        run: bash ./publish.sh
+        run: |
+          spacetime logout && spacetime login --server-issued-login local
+          bash ./publish.sh
 
       - uses: actions/cache@v3
         with:
