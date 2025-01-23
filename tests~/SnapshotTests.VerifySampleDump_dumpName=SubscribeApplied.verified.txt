@@ -541,26 +541,18 @@
   Stats: {
     ReducerRequestTracker: {
       sampleCount: 3,
-      requestsAwaitingResponse: 6,
-      Min: sample#3,
-      Max: sample#5
+      requestsAwaitingResponse: 6
     },
     OneOffRequestTracker: {},
     SubscriptionRequestTracker: {
       sampleCount: 1,
-      requestsAwaitingResponse: 2,
-      Min: sample#1,
-      Max: sample#1
+      requestsAwaitingResponse: 2
     },
     AllReducersTracker: {
-      sampleCount: 9,
-      Min: reducer=send_message,
-      Max: reducer=set_name
+      sampleCount: 9
     },
     ParseMessageTracker: {
-      sampleCount: 14,
-      Min: type=TransactionUpdate,reducer=send_message,
-      Max: type=SubscribeApplied
+      sampleCount: 14
     }
   }
 }
