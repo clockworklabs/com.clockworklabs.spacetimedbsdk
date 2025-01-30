@@ -406,7 +406,7 @@ namespace SpacetimeDB
             void PreProcessInsertOnlyTable(IRemoteTableHandle table, TableUpdate update, List<DbOp> dbOps, HashSet<byte[]> inserts)
             {
                 // In debug mode, make sure we use a byte array comparer in HashSet and not a reference-equal `byte[]` by accident.
-                Debug.Assert(ReferenceEquals(inserts.Comparer, ByteArrayComparer.Instance));
+                Debug.Assert(inserts.Comparer is ByteArrayComparer);
 
                 foreach (var cqu in update.Updates)
                 {
