@@ -18,7 +18,7 @@ namespace SpacetimeDB.ClientApi
 		[DataMember(Name = "status")]
 		public SpacetimeDB.ClientApi.UpdateStatus Status;
 		[DataMember(Name = "timestamp")]
-		public SpacetimeDB.ClientApi.Timestamp Timestamp;
+		public SpacetimeDB.Timestamp Timestamp;
 		[DataMember(Name = "caller_identity")]
 		public SpacetimeDB.Identity CallerIdentity;
 		[DataMember(Name = "caller_address")]
@@ -27,17 +27,17 @@ namespace SpacetimeDB.ClientApi
 		public SpacetimeDB.ClientApi.ReducerCallInfo ReducerCall;
 		[DataMember(Name = "energy_quanta_used")]
 		public SpacetimeDB.ClientApi.EnergyQuanta EnergyQuantaUsed;
-		[DataMember(Name = "host_execution_duration_micros")]
-		public ulong HostExecutionDurationMicros;
+		[DataMember(Name = "total_host_execution_duration")]
+		public SpacetimeDB.TimeDuration TotalHostExecutionDuration;
 
 		public TransactionUpdate(
 			SpacetimeDB.ClientApi.UpdateStatus Status,
-			SpacetimeDB.ClientApi.Timestamp Timestamp,
+			SpacetimeDB.Timestamp Timestamp,
 			SpacetimeDB.Identity CallerIdentity,
 			SpacetimeDB.Address CallerAddress,
 			SpacetimeDB.ClientApi.ReducerCallInfo ReducerCall,
 			SpacetimeDB.ClientApi.EnergyQuanta EnergyQuantaUsed,
-			ulong HostExecutionDurationMicros
+			SpacetimeDB.TimeDuration TotalHostExecutionDuration
 		)
 		{
 			this.Status = Status;
@@ -46,7 +46,7 @@ namespace SpacetimeDB.ClientApi
 			this.CallerAddress = CallerAddress;
 			this.ReducerCall = ReducerCall;
 			this.EnergyQuantaUsed = EnergyQuantaUsed;
-			this.HostExecutionDurationMicros = HostExecutionDurationMicros;
+			this.TotalHostExecutionDuration = TotalHostExecutionDuration;
 		}
 
 		public TransactionUpdate()
@@ -57,6 +57,7 @@ namespace SpacetimeDB.ClientApi
 			this.CallerAddress = new();
 			this.ReducerCall = new();
 			this.EnergyQuantaUsed = new();
+			this.TotalHostExecutionDuration = new();
 		}
 
 	}

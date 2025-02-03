@@ -1,3 +1,5 @@
+#!/bin/bash
+
 set -ueo pipefail
 
 STDB_PATH="$1"

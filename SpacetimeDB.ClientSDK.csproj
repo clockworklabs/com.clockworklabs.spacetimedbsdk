@@ -21,13 +21,18 @@
     <DefaultItemExcludes>$(DefaultItemExcludes);*~/**</DefaultItemExcludes>
     <!-- We want to save DLLs for Unity which doesn't support NuGet. -->
     <RestorePackagesPath>packages</RestorePackagesPath>
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SpacetimeDB.BSATN.Runtime" Version="1.0.0-rc4" />
+    <!-- TODO: revert before merging -->
+    <ProjectReference Include="../SpacetimeDB/crates/bindings-csharp/BSATN.Codegen/BSATN.Codegen.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../SpacetimeDB/crates/bindings-csharp/BSATN.Runtime/BSATN.Runtime.csproj" />
 
     <InternalsVisibleTo Include="SpacetimeDB.Tests" />
   </ItemGroup>
+
+
 
   <ItemGroup>
     <None Update="logo.png" Pack="true" PackagePath="" />
