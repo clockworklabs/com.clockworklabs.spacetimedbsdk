@@ -106,7 +106,7 @@ jobs:
 
       - name: Check for changes
         run: |
-          git diff --exit-code unity-tests~/client/Assets/Scripts/autogen || {
+          git diff --exit-code unity-tests~/client-unity/Assets/Scripts/autogen || {
               echo "Error: Bindings are dirty. Please generate bindings again and commit them to this branch."
               exit 1
           }
