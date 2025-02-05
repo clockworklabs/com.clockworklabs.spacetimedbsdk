@@ -78,6 +78,7 @@ jobs:
           sed -i "s|spacetimedb *=.*|spacetimedb = \{ path = \"../../SpacetimeDB~/crates/bindings\" \}|" Cargo.toml
           cat Cargo.toml
 
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
