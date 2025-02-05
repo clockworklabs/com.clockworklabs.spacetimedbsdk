@@ -150,7 +150,7 @@ jobs:
         uses: game-ci/unity-test-runner@v4
         with:
           unityVersion: 2022.3.32f1  # Adjust Unity version to a valid tag
-          projectPath: unity-tests~/client  # Path to the Unity project subdirectory
+          projectPath: unity-tests~/client-unity  # Path to the Unity project subdirectory
           githubToken: ${{ secrets.GITHUB_TOKEN }}
           testMode: playmode
           useHostNetwork: true
