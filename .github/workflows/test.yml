@@ -130,7 +130,7 @@ jobs:
           bash ./publish.sh
 
       - name: Patch com.clockworklabs.spacetimedbsdk dependency in manifest.json
-        working-directory: unity-tests~/client/Packages
+        working-directory: unity-tests~/client-unity/Packages
         run: |
           # Replace the com.clockworklabs.spacetimedbsdk dependency with the current branch.
           # TODO: find out why pointing to a local directory doesn't work - is it because Unity CI action uses Docker?
@@ -139,7 +139,7 @@ jobs:
 
       - uses: actions/cache@v3
         with:
-          path: unity-tests~/client/Library
+          path: unity-tests~/client-unity/Library
           key: Library-SpacetimeDBUnityTestsuite-Linux-x86
           restore-keys: |
             Library-SpacetimeDBUnityTestsuite-
