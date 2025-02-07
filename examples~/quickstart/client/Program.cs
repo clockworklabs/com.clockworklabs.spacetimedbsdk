@@ -104,27 +104,21 @@ void Message_OnInsert(EventContext ctx, Message insertedValue)
     }
 }
 
-void Reducer_OnSetNameEvent(EventContext ctx, string name)
+void Reducer_OnSetNameEvent(ReducerEventContext ctx, string name)
 {
-    if (ctx.Event is Event<Reducer>.Reducer reducer)
+    var e = ctx.Event;
+    if (e.CallerIdentity == local_identity && e.Status is Status.Failed(var error))
     {
-        var e = reducer.ReducerEvent;
-        if (e.CallerIdentity == local_identity && e.Status is Status.Failed(var error))
-        {
-            Console.Write($"Failed to change name to {name}: {error}");
-        }
+        Console.Write($"Failed to change name to {name}: {error}");
     }
 }
 
-void Reducer_OnSendMessageEvent(EventContext ctx, string text)
+void Reducer_OnSendMessageEvent(ReducerEventContext ctx, string text)
 {
-    if (ctx.Event is Event<Reducer>.Reducer reducer)
+    var e = ctx.Event;
+    if (e.CallerIdentity == local_identity && e.Status is Status.Failed(var error))
     {
-        var e = reducer.ReducerEvent;
-        if (e.CallerIdentity == local_identity && e.Status is Status.Failed(var error))
-        {
-            Console.Write($"Failed to send message {text}: {error}");
-        }
+        Console.Write($"Failed to send message {text}: {error}");
     }
 }
 

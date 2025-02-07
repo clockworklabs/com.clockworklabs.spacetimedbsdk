@@ -135,9 +135,9 @@ namespace SpacetimeDB.Types
         protected override IErrorContext ToErrorContext(Exception exception) =>
         new ErrorContext(this, exception);
 
-        protected override bool Dispatch(IEventContext context, Reducer reducer)
+        protected override bool Dispatch(IReducerEventContext context, Reducer reducer)
         {
-            var eventContext = (EventContext)context;
+            var eventContext = (ReducerEventContext)context;
             return reducer switch
             {
                 Reducer.IdentityConnected args => Reducers.InvokeIdentityConnected(eventContext, args),

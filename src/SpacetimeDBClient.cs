@@ -791,7 +791,7 @@ namespace SpacetimeDB
             }
         }
 
-        protected abstract bool Dispatch(IEventContext context, Reducer reducer);
+        protected abstract bool Dispatch(IReducerEventContext context, Reducer reducer);
 
         private void OnMessageProcessComplete(PreProcessedMessage preProcessed)
         {
@@ -935,8 +935,9 @@ namespace SpacetimeDB
                             break;
                         }
 
-                        var eventContext = ToEventContext(new Event<Reducer>.Reducer(reducerEvent));
-                        OnMessageProcessCompleteUpdate(eventContext, dbOps);
+                        var eventContext = ToReducerEventContext(reducerEvent);
+                        var legacyEventContext = ToEventContext(new Event<Reducer>.Reducer(reducerEvent));
+                        OnMessageProcessCompleteUpdate(legacyEventContext, dbOps);
 
                         var reducerFound = false;
                         try
