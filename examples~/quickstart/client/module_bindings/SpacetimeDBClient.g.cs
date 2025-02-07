@@ -43,7 +43,7 @@ namespace SpacetimeDB.Types
         }
     }
 
-    public sealed class ReducerEventContext : IEventContext
+    public sealed class ReducerEventContext : IReducerEventContext
     {
         private readonly DbConnection conn;
         public readonly ReducerEvent<Reducer> Event;
@@ -59,7 +59,7 @@ namespace SpacetimeDB.Types
         }
     }
 
-    public sealed class ErrorContext : IEventContext
+    public sealed class ErrorContext : IErrorContext
     {
         private readonly DbConnection conn;
         public readonly Exception Event;
@@ -76,7 +76,7 @@ namespace SpacetimeDB.Types
         }
     }
 
-    public sealed class SubscriptionEventContext : IEventContext
+    public sealed class SubscriptionEventContext : ISubscriptionEventContext
     {
         private readonly DbConnection conn;
 
@@ -126,13 +126,13 @@ namespace SpacetimeDB.Types
         protected override IEventContext ToEventContext(Event<Reducer> Event) =>
         new EventContext(this, Event);
 
-        protected override IEventContext ToReducerEventContext(ReducerEvent<Reducer> reducerEvent) =>
+        protected override IReducerEventContext ToReducerEventContext(ReducerEvent<Reducer> reducerEvent) =>
         new ReducerEventContext(this, reducerEvent);
 
-        protected override IEventContext MakeSubscriptionEventContext() =>
+        protected override ISubscriptionEventContext MakeSubscriptionEventContext() =>
         new SubscriptionEventContext(this);
 
-        protected override IEventContext ToErrorContext(Exception exception) =>
+        protected override IErrorContext ToErrorContext(Exception exception) =>
         new ErrorContext(this, exception);
 
         protected override bool Dispatch(IEventContext context, Reducer reducer)

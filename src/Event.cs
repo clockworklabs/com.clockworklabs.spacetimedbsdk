@@ -3,7 +3,27 @@ using SpacetimeDB.ClientApi;
 
 namespace SpacetimeDB
 {
-    public interface IEventContext { }
+    public interface IEventContext
+    {
+
+    }
+
+    public interface IReducerEventContext
+    {
+
+    }
+
+    public interface ISubscriptionEventContext
+    {
+
+    }
+
+    public interface IErrorContext
+    {
+        public Exception Error { get; }
+    }
+
+
 
     public interface IReducerArgs : BSATN.IStructuralReadWrite
     {
@@ -39,13 +59,13 @@ namespace SpacetimeDB
 
     // TODO: Move those classes into EventContext, so that we wouldn't need repetitive generics.
     public sealed class SubscriptionBuilder<SubscriptionEventContext, ErrorContext>
-        where SubscriptionEventContext : IEventContext
-        where ErrorContext : IEventContext
+        where SubscriptionEventContext : ISubscriptionEventContext
+        where ErrorContext : IErrorContext
     {
         private readonly IDbConnection conn;
 
         private event Action<SubscriptionEventContext>? Applied;
-        private event Action<ErrorContext>? Error;
+        private event Action<ErrorContext, Exception>? Error;
 
         public SubscriptionBuilder(IDbConnection conn)
         {
@@ -61,7 +81,7 @@ namespace SpacetimeDB
         }
 
         public SubscriptionBuilder<SubscriptionEventContext, ErrorContext> OnError(
-            Action<ErrorContext> callback
+            Action<ErrorContext, Exception> callback
         )
         {
             Error += callback;
@@ -86,9 +106,9 @@ namespace SpacetimeDB
 
     public interface ISubscriptionHandle
     {
-        void OnApplied(IEventContext ctx, SubscriptionAppliedType state);
-        void OnError(IEventContext ctx);
-        void OnEnded(IEventContext ctx);
+        void OnApplied(ISubscriptionEventContext ctx, SubscriptionAppliedType state);
+        void OnError(IErrorContext ctx);
+        void OnEnded(ISubscriptionEventContext ctx);
     }
 
     /// <summary>
@@ -121,12 +141,12 @@ namespace SpacetimeDB
     { }
 
     public class SubscriptionHandle<SubscriptionEventContext, ErrorContext> : ISubscriptionHandle
-        where SubscriptionEventContext : IEventContext
-        where ErrorContext : IEventContext
+        where SubscriptionEventContext : ISubscriptionEventContext
+        where ErrorContext : IErrorContext
     {
         private readonly IDbConnection conn;
         private readonly Action<SubscriptionEventContext>? onApplied;
-        private readonly Action<ErrorContext>? onError;
+        private readonly Action<ErrorContext, Exception>? onError;
         private Action<SubscriptionEventContext>? onEnded;
 
         private SubscriptionState state;
@@ -153,7 +173,7 @@ namespace SpacetimeDB
             }
         }
 
-        void ISubscriptionHandle.OnApplied(IEventContext ctx, SubscriptionAppliedType type)
+        void ISubscriptionHandle.OnApplied(ISubscriptionEventContext ctx, SubscriptionAppliedType type)
         {
             if (type is SubscriptionAppliedType.Active active)
             {
@@ -166,16 +186,16 @@ namespace SpacetimeDB
             onApplied?.Invoke((SubscriptionEventContext)ctx);
         }
 
-        void ISubscriptionHandle.OnEnded(IEventContext ctx)
+        void ISubscriptionHandle.OnEnded(ISubscriptionEventContext ctx)
         {
             state = new SubscriptionState.Ended(new());
             onEnded?.Invoke((SubscriptionEventContext)ctx);
         }
 
-        void ISubscriptionHandle.OnError(IEventContext ctx)
+        void ISubscriptionHandle.OnError(IErrorContext ctx)
         {
             state = new SubscriptionState.Ended(new());
-            onError?.Invoke((ErrorContext)ctx);
+            onError?.Invoke((ErrorContext)ctx, ctx.Error!);
         }
 
         /// <summary>
@@ -203,7 +223,7 @@ namespace SpacetimeDB
         internal SubscriptionHandle(
             IDbConnection conn,
             Action<SubscriptionEventContext>? onApplied,
-            Action<ErrorContext>? onError,
+            Action<ErrorContext, Exception>? onError,
             string querySql
         )
         {
