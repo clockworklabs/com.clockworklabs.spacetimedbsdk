@@ -20,7 +20,7 @@ namespace SpacetimeDB
 
     public interface IErrorContext
     {
-        public Exception Error { get; }
+        public Exception Event { get; }
     }
 
 
@@ -195,7 +195,7 @@ namespace SpacetimeDB
         void ISubscriptionHandle.OnError(IErrorContext ctx)
         {
             state = new SubscriptionState.Ended(new());
-            onError?.Invoke((ErrorContext)ctx, ctx.Error!);
+            onError?.Invoke((ErrorContext)ctx, ctx.Event);
         }
 
         /// <summary>
