@@ -182,7 +182,10 @@ namespace SpacetimeDB
         public abstract Tables Db { get; }
 
         protected abstract Reducer ToReducer(TransactionUpdate update);
-        protected abstract IEventContext ToEventContext(Event<Reducer> reducerEvent);
+        protected abstract IEventContext ToEventContext(Event<Reducer> Event);
+        protected abstract IEventContext ToReducerEventContext(ReducerEvent<Reducer> reducerEvent);
+        protected abstract IEventContext MakeSubscriptionEventContext();
+        protected abstract IEventContext ToErrorContext(Exception errorContext);
 
         private readonly Dictionary<Guid, TaskCompletionSource<OneOffQueryResponse>> waitingOneOffQueries = new();
 

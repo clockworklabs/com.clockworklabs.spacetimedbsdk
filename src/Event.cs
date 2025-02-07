@@ -38,38 +38,49 @@ namespace SpacetimeDB
     }
 
     // TODO: Move those classes into EventContext, so that we wouldn't need repetitive generics.
-    public sealed class SubscriptionBuilder<EventContext>
-        where EventContext : IEventContext
+    public sealed class SubscriptionBuilder<SubscriptionEventContext, ErrorContext>
+        where SubscriptionEventContext : IEventContext
+        where ErrorContext : IEventContext
     {
         private readonly IDbConnection conn;
-        public delegate void Callback(EventContext ctx);
-        private event Callback? Applied;
-        private event Callback? Error;
+
+        private event Action<SubscriptionEventContext>? Applied;
+        private event Action<ErrorContext>? Error;
 
         public SubscriptionBuilder(IDbConnection conn)
         {
             this.conn = conn;
         }
 
-        public SubscriptionBuilder<EventContext> OnApplied(Callback callback)
+        public SubscriptionBuilder<SubscriptionEventContext, ErrorContext> OnApplied(
+            Action<SubscriptionEventContext> callback
+        )
         {
             Applied += callback;
             return this;
         }
 
-        public SubscriptionBuilder<EventContext> OnError(Callback callback)
+        public SubscriptionBuilder<SubscriptionEventContext, ErrorContext> OnError(
+            Action<ErrorContext> callback
+        )
         {
             Error += callback;
             return this;
         }
 
-        public SubscriptionHandle<EventContext> Subscribe(string querySql) => new(conn, Applied, Error, querySql);
+        public SubscriptionHandle<SubscriptionEventContext, ErrorContext> Subscribe(
+            string querySql
+        ) => new(conn, Applied, Error, querySql);
 
         public void SubscribeToAllTables()
         {
             // Make sure we use the legacy handle constructor here, even though there's only 1 query.
             // We drop the error handler, since it can't be called for legacy subscriptions.
-            new SubscriptionHandle<EventContext>(conn, Applied, new string[] { "SELECT * FROM *" });
+            new SubscriptionHandle<SubscriptionEventContext, ErrorContext>(
+                conn,
+                Applied,
+                new string[] { "SELECT * FROM *" }
+            );
         }
     }
 
@@ -105,20 +116,18 @@ namespace SpacetimeDB
     /// </c>
     /// </summary>
     [Type]
-    public partial record SubscriptionState : TaggedEnum<(
-        Unit Pending,
-        QueryId Active,
-        Unit LegacyActive,
-        Unit Ended)>
+    public partial record SubscriptionState
+        : TaggedEnum<(Unit Pending, QueryId Active, Unit LegacyActive, Unit Ended)>
     { }
 
-    public class SubscriptionHandle<EventContext> : ISubscriptionHandle
-        where EventContext : IEventContext
+    public class SubscriptionHandle<SubscriptionEventContext, ErrorContext> : ISubscriptionHandle
+        where SubscriptionEventContext : IEventContext
+        where ErrorContext : IEventContext
     {
         private readonly IDbConnection conn;
-        private readonly SubscriptionBuilder<EventContext>.Callback? onApplied;
-        private readonly SubscriptionBuilder<EventContext>.Callback? onError;
-        private SubscriptionBuilder<EventContext>.Callback? onEnded;
+        private readonly Action<SubscriptionEventContext>? onApplied;
+        private readonly Action<ErrorContext>? onError;
+        private Action<SubscriptionEventContext>? onEnded;
 
         private SubscriptionState state;
 
@@ -154,19 +163,19 @@ namespace SpacetimeDB
             {
                 state = new SubscriptionState.LegacyActive(new());
             }
-            onApplied?.Invoke((EventContext)ctx);
+            onApplied?.Invoke((SubscriptionEventContext)ctx);
         }
 
         void ISubscriptionHandle.OnEnded(IEventContext ctx)
         {
             state = new SubscriptionState.Ended(new());
-            onEnded?.Invoke((EventContext)ctx);
+            onEnded?.Invoke((SubscriptionEventContext)ctx);
         }
 
         void ISubscriptionHandle.OnError(IEventContext ctx)
         {
             state = new SubscriptionState.Ended(new());
-            onError?.Invoke((EventContext)ctx);
+            onError?.Invoke((ErrorContext)ctx);
         }
 
         /// <summary>
@@ -176,7 +185,7 @@ namespace SpacetimeDB
         /// <param name="onApplied"></param>
         /// <param name="onError"></param>
         /// <param name="querySqls"></param>
-        internal SubscriptionHandle(IDbConnection conn, SubscriptionBuilder<EventContext>.Callback? onApplied, string[] querySqls)
+        internal SubscriptionHandle(IDbConnection conn, Action<SubscriptionEventContext>? onApplied, string[] querySqls)
         {
             state = new SubscriptionState.Pending(new());
             this.conn = conn;
@@ -191,7 +200,12 @@ namespace SpacetimeDB
         /// <param name="onApplied"></param>
         /// <param name="onError"></param>
         /// <param name="querySql"></param>
-        internal SubscriptionHandle(IDbConnection conn, SubscriptionBuilder<EventContext>.Callback? onApplied, SubscriptionBuilder<EventContext>.Callback? onError, string querySql)
+        internal SubscriptionHandle(
+            IDbConnection conn,
+            Action<SubscriptionEventContext>? onApplied,
+            Action<ErrorContext>? onError,
+            string querySql
+        )
         {
             state = new SubscriptionState.Pending(new());
             this.onApplied = onApplied;
@@ -214,7 +228,7 @@ namespace SpacetimeDB
         /// Unsubscribe from the query controlled by this subscription handle,
         /// and call onEnded when its rows are removed from the client cache.
         /// </summary>
-        public void UnsubscribeThen(SubscriptionBuilder<EventContext>.Callback? onEnded)
+        public void UnsubscribeThen(Action<SubscriptionEventContext>? onEnded)
         {
             if (state is not SubscriptionState.Active)
             {

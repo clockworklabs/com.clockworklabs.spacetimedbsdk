@@ -26,6 +26,7 @@ namespace SpacetimeDB.Types
     }
 
     public sealed partial class SetReducerFlags { }
+
     public sealed class EventContext : IEventContext
     {
         private readonly DbConnection conn;
@@ -35,10 +36,57 @@ namespace SpacetimeDB.Types
         public RemoteReducers Reducers => conn.Reducers;
         public SetReducerFlags SetReducerFlags => conn.SetReducerFlags;
 
-        internal EventContext(DbConnection conn, Event<Reducer> reducerEvent)
+        internal EventContext(DbConnection conn, Event<Reducer> Event)
+        {
+            this.conn = conn;
+            this.Event = Event;
+        }
+    }
+
+    public sealed class ReducerEventContext : IEventContext
+    {
+        private readonly DbConnection conn;
+        public readonly ReducerEvent<Reducer> Event;
+
+        public RemoteTables Db => conn.Db;
+        public RemoteReducers Reducers => conn.Reducers;
+        public SetReducerFlags SetReducerFlags => conn.SetReducerFlags;
+
+        internal ReducerEventContext(DbConnection conn, ReducerEvent<Reducer> reducerEvent)
         {
             this.conn = conn;
             Event = reducerEvent;
+        }
+    }
+
+    public sealed class ErrorContext : IEventContext
+    {
+        private readonly DbConnection conn;
+        public readonly Exception Event;
+
+        public RemoteTables Db => conn.Db;
+        public RemoteReducers Reducers => conn.Reducers;
+        public SetReducerFlags SetReducerFlags => conn.SetReducerFlags;
+        public Exception Error => Event;
+
+        internal ErrorContext(DbConnection conn, Exception error)
+        {
+            this.conn = conn;
+            Event = error;
+        }
+    }
+
+    public sealed class SubscriptionEventContext : IEventContext
+    {
+        private readonly DbConnection conn;
+
+        public RemoteTables Db => conn.Db;
+        public RemoteReducers Reducers => conn.Reducers;
+        public SetReducerFlags SetReducerFlags => conn.SetReducerFlags;
+
+        internal SubscriptionEventContext(DbConnection conn)
+        {
+            this.conn = conn;
         }
     }
 
@@ -75,8 +123,17 @@ namespace SpacetimeDB.Types
             };
         }
 
-        protected override IEventContext ToEventContext(Event<Reducer> reducerEvent) =>
-        new EventContext(this, reducerEvent);
+        protected override IEventContext ToEventContext(Event<Reducer> Event) =>
+        new EventContext(this, Event);
+
+        protected override IEventContext ToReducerEventContext(ReducerEvent<Reducer> reducerEvent) =>
+        new ReducerEventContext(this, reducerEvent);
+
+        protected override IEventContext MakeSubscriptionEventContext() =>
+        new SubscriptionEventContext(this);
+
+        protected override IEventContext ToErrorContext(Exception exception) =>
+        new ErrorContext(this, exception);
 
         protected override bool Dispatch(IEventContext context, Reducer reducer)
         {
@@ -92,6 +149,6 @@ namespace SpacetimeDB.Types
             };
         }
 
-        public SubscriptionBuilder<EventContext> SubscriptionBuilder() => new(this);
+        public SubscriptionBuilder<SubscriptionEventContext, ErrorContext> SubscriptionBuilder() => new(this);
     }
 }

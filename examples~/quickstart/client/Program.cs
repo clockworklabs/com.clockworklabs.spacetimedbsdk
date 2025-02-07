@@ -134,7 +134,7 @@ void OnConnect(DbConnection conn, Identity identity, string authToken)
     AuthToken.SaveToken(authToken);
 
     var subscriptions = 0;
-    SubscriptionBuilder<EventContext>.Callback waitForSubscriptions = (EventContext ctx) =>
+    Action<SubscriptionEventContext> waitForSubscriptions = (SubscriptionEventContext ctx) =>
     {
         // Note: callbacks are always invoked on the main thread, so you don't need to
         // worry about thread synchronization or anything like that.
@@ -176,7 +176,7 @@ void PrintMessagesInOrder(RemoteTables tables)
     }
 }
 
-void OnSubscriptionApplied(EventContext ctx)
+void OnSubscriptionApplied(SubscriptionEventContext ctx)
 {
     Console.WriteLine("Connected");
     PrintMessagesInOrder(ctx.Db);
