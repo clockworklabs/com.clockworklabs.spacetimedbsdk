@@ -182,7 +182,10 @@ namespace SpacetimeDB
         public abstract Tables Db { get; }
 
         protected abstract Reducer ToReducer(TransactionUpdate update);
-        protected abstract IEventContext ToEventContext(Event<Reducer> reducerEvent);
+        protected abstract IEventContext ToEventContext(Event<Reducer> Event);
+        protected abstract IReducerEventContext ToReducerEventContext(ReducerEvent<Reducer> reducerEvent);
+        protected abstract ISubscriptionEventContext MakeSubscriptionEventContext();
+        protected abstract IErrorContext ToErrorContext(Exception errorContext);
 
         private readonly Dictionary<Guid, TaskCompletionSource<OneOffQueryResponse>> waitingOneOffQueries = new();
 
@@ -791,7 +794,7 @@ namespace SpacetimeDB
             }
         }
 
-        protected abstract bool Dispatch(IEventContext context, Reducer reducer);
+        protected abstract bool Dispatch(IReducerEventContext context, Reducer reducer);
 
         private void OnMessageProcessComplete(PreProcessedMessage preProcessed)
         {
@@ -806,8 +809,9 @@ namespace SpacetimeDB
                     {
                         stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.InitialSubscription)}");
                         stats.SubscriptionRequestTracker.FinishTrackingRequest(initialSubscription.RequestId);
-                        var eventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
-                        OnMessageProcessCompleteUpdate(eventContext, dbOps);
+                        var eventContext = MakeSubscriptionEventContext();
+                        var legacyEventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
+                        OnMessageProcessCompleteUpdate(legacyEventContext, dbOps);
                         if (legacySubscriptions.TryGetValue(initialSubscription.RequestId, out var subscription))
                         {
                             try
@@ -826,8 +830,9 @@ namespace SpacetimeDB
                     {
                         stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.SubscribeApplied)}");
                         stats.SubscriptionRequestTracker.FinishTrackingRequest(subscribeApplied.RequestId);
-                        var eventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
-                        OnMessageProcessCompleteUpdate(eventContext, dbOps);
+                        var eventContext = MakeSubscriptionEventContext();
+                        var legacyEventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
+                        OnMessageProcessCompleteUpdate(legacyEventContext, dbOps);
                         if (subscriptions.TryGetValue(subscribeApplied.QueryId.Id, out var subscription))
                         {
                             try
@@ -852,8 +857,10 @@ namespace SpacetimeDB
                             stats.SubscriptionRequestTracker.FinishTrackingRequest(subscriptionError.RequestId.Value);
                         }
                         // TODO: should I use a more specific exception type here?
-                        var eventContext = ToEventContext(new Event<Reducer>.SubscribeError(new Exception(subscriptionError.Error)));
-                        OnMessageProcessCompleteUpdate(eventContext, dbOps);
+                        var exception = new Exception(subscriptionError.Error);
+                        var eventContext = ToErrorContext(exception);
+                        var legacyEventContext = ToEventContext(new Event<Reducer>.SubscribeError(exception));
+                        OnMessageProcessCompleteUpdate(legacyEventContext, dbOps);
                         if (subscriptionError.QueryId.HasValue)
                         {
                             if (subscriptions.TryGetValue(subscriptionError.QueryId.Value, out var subscription))
@@ -881,8 +888,9 @@ namespace SpacetimeDB
                     {
                         stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.UnsubscribeApplied)}");
                         stats.SubscriptionRequestTracker.FinishTrackingRequest(unsubscribeApplied.RequestId);
-                        var eventContext = ToEventContext(new Event<Reducer>.UnsubscribeApplied());
-                        OnMessageProcessCompleteUpdate(eventContext, dbOps);
+                        var eventContext = MakeSubscriptionEventContext();
+                        var legacyEventContext = ToEventContext(new Event<Reducer>.UnsubscribeApplied());
+                        OnMessageProcessCompleteUpdate(legacyEventContext, dbOps);
                         if (subscriptions.TryGetValue(unsubscribeApplied.QueryId.Id, out var subscription))
                         {
                             try
@@ -930,8 +938,9 @@ namespace SpacetimeDB
                             break;
                         }
 
-                        var eventContext = ToEventContext(new Event<Reducer>.Reducer(reducerEvent));
-                        OnMessageProcessCompleteUpdate(eventContext, dbOps);
+                        var eventContext = ToReducerEventContext(reducerEvent);
+                        var legacyEventContext = ToEventContext(new Event<Reducer>.Reducer(reducerEvent));
+                        OnMessageProcessCompleteUpdate(legacyEventContext, dbOps);
 
                         var reducerFound = false;
                         try
