@@ -168,12 +168,6 @@ namespace SpacetimeDB
         /// </summary>
         private UintAllocator queryIdAllocator;
 
-        /// <summary>
-        /// Invoked when a reducer is returned with an error and has no client-side handler.
-        /// </summary>
-        [Obsolete]
-        public event Action<ReducerEvent<Reducer>>? onUnhandledReducerError;
-
         public readonly ConnectionId ConnectionId = ConnectionId.Random();
         public Identity? Identity { get; private set; }
 
