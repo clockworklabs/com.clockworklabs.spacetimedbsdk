@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Linq;
-using System.Net.WebSockets;
 using System.Threading;
 using SpacetimeDB;
 using SpacetimeDB.Types;
@@ -106,27 +104,21 @@ void Message_OnInsert(EventContext ctx, Message insertedValue)
     }
 }
 
-void Reducer_OnSetNameEvent(EventContext ctx, string name)
+void Reducer_OnSetNameEvent(ReducerEventContext ctx, string name)
 {
-    if (ctx.Event is Event<Reducer>.Reducer reducer)
+    var e = ctx.Event;
+    if (e.CallerIdentity == local_identity && e.Status is Status.Failed(var error))
     {
-        var e = reducer.ReducerEvent;
-        if (e.CallerIdentity == local_identity && e.Status is Status.Failed(var error))
-        {
-            Console.Write($"Failed to change name to {name}: {error}");
-        }
+        Console.Write($"Failed to change name to {name}: {error}");
     }
 }
 
-void Reducer_OnSendMessageEvent(EventContext ctx, string text)
+void Reducer_OnSendMessageEvent(ReducerEventContext ctx, string text)
 {
-    if (ctx.Event is Event<Reducer>.Reducer reducer)
+    var e = ctx.Event;
+    if (e.CallerIdentity == local_identity && e.Status is Status.Failed(var error))
     {
-        var e = reducer.ReducerEvent;
-        if (e.CallerIdentity == local_identity && e.Status is Status.Failed(var error))
-        {
-            Console.Write($"Failed to send message {text}: {error}");
-        }
+        Console.Write($"Failed to send message {text}: {error}");
     }
 }
 
@@ -135,9 +127,29 @@ void OnConnect(DbConnection conn, Identity identity, string authToken)
     local_identity = identity;
     AuthToken.SaveToken(authToken);
 
-    conn.SubscriptionBuilder()
-        .OnApplied(OnSubscriptionApplied)
-        .Subscribe("SELECT * FROM user", "SELECT * FROM message");
+    var subscriptions = 0;
+    Action<SubscriptionEventContext> waitForSubscriptions = (SubscriptionEventContext ctx) =>
+    {
+        // Note: callbacks are always invoked on the main thread, so you don't need to
+        // worry about thread synchronization or anything like that.
+        subscriptions += 1;
+
+        if (subscriptions == 2)
+        {
+            OnSubscriptionApplied(ctx);
+        }
+    };
+
+    var userSubscription = conn.SubscriptionBuilder()
+        .OnApplied(waitForSubscriptions)
+        .Subscribe("SELECT * FROM user");
+    var messageSubscription = conn.SubscriptionBuilder()
+        .OnApplied(waitForSubscriptions)
+        .Subscribe("SELECT * FROM message");
+
+    // You can also use SubscribeToAllTables, but it should be avoided if you have any large tables:
+    // conn.SubscriptionBuilder().OnApplied(OnSubscriptionApplied).SubscribeToAllTables();
+
 }
 
 void OnConnectError(Exception e)
@@ -158,7 +170,7 @@ void PrintMessagesInOrder(RemoteTables tables)
     }
 }
 
-void OnSubscriptionApplied(EventContext ctx)
+void OnSubscriptionApplied(SubscriptionEventContext ctx)
 {
     Console.WriteLine("Connected");
     PrintMessagesInOrder(ctx.Db);
