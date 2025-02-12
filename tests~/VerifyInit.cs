@@ -24,11 +24,11 @@ static class VerifyInit
         }
     }
 
-    class AddressConverter : WriteOnlyJsonConverter<Address>
+    class ConnectionIdConverter : WriteOnlyJsonConverter<ConnectionId>
     {
-        public override void Write(VerifyJsonWriter writer, Address value)
+        public override void Write(VerifyJsonWriter writer, ConnectionId value)
         {
-            // Addresses are GUIDs, which Verify scrubs automatically.
+            // ConnectionIdes are GUIDs, which Verify scrubs automatically.
             writer.WriteValue(value.ToString());
         }
     }
@@ -55,14 +55,7 @@ static class VerifyInit
                 );
             }
 
-            if (
-                value.GetMinMaxTimes(int.MaxValue) is
-                { Min.Metadata: var Min, Max.Metadata: var Max }
-            )
-            {
-                writer.WriteMember(value, Min, nameof(Min));
-                writer.WriteMember(value, Max, nameof(Max));
-            }
+            // We don't use the stats, since they are nondeterministic.
 
             writer.WriteEndObject();
         }
@@ -78,7 +71,7 @@ static class VerifyInit
             settings.Converters.AddRange(
                 [
                     new IdentityConverter(),
-                    new AddressConverter(),
+                    new ConnectionIdConverter(),
                     new NetworkRequestTrackerConverter()
                 ]
             );
