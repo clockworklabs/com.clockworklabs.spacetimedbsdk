@@ -254,7 +254,7 @@ namespace SpacetimeDB
             {
                 throw new Exception("Cannot unsubscribe from inactive subscription.");
             }
-            if (onEnded != null)
+            if (this.onEnded != null)
             {
                 // TODO: should we just log here instead? Do we try not to throw exceptions on the main thread?
                 throw new Exception("Unsubscribe already called.");
