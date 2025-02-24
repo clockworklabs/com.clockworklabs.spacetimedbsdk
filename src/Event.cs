@@ -92,7 +92,6 @@ namespace SpacetimeDB
         public ConnectionId ConnectionId { get; }
     }
 
-
     public interface IReducerArgs : BSATN.IStructuralReadWrite
     {
         string ReducerName { get; }
