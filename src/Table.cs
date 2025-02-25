@@ -23,7 +23,6 @@ namespace SpacetimeDB
         internal string RemoteTableName { get; }
 
         internal Type ClientTableType { get; }
-        internal IEnumerable<KeyValuePair<byte[], IStructuralReadWrite>> IterEntries();
         internal IStructuralReadWrite DecodeValue(byte[] bytes);
 
         /// <summary>
@@ -140,9 +139,6 @@ namespace SpacetimeDB
         // This is memory-inefficient, but allows us to quickly compare objects when seeing if an update is a "real"
         // update or just a multiplicity change.
         private readonly MultiDictionary<object, DbValue> Entries = new(GenericEqualityComparer.Instance, DbValueComparer.Instance);
-
-        IEnumerable<KeyValuePair<byte[], IStructuralReadWrite>> IRemoteTableHandle.IterEntries() =>
-            Entries.Entries.Select(kv => new KeyValuePair<byte[], IStructuralReadWrite>(kv.Value.bytes, kv.Value.value));
 
         // The function to use for decoding a type value.
         IStructuralReadWrite IRemoteTableHandle.DecodeValue(byte[] bytes) => BSATNHelpers.Decode<Row>(bytes);
