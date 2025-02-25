@@ -124,7 +124,7 @@ void OnConnect(DbConnection conn, Identity identity, string authToken)
     local_identity = identity;
     AuthToken.SaveToken(authToken);
 
-    var userSubscription = conn.SubscriptionBuilder()
+    var subscription = conn.SubscriptionBuilder()
         .OnApplied(OnSubscriptionApplied)
         .Subscribe(new string[] {
             "SELECT * FROM user",
