@@ -174,14 +174,14 @@ namespace SpacetimeDB
             var self = this;
             return delta.Entries.Where(entry =>
             {
-                var entryDelta = (int)entry.Value.Inserts - (int)entry.Value.Removes;
-                if (entryDelta >= 0)
+                var theirDelta = (int)entry.Value.Inserts - (int)entry.Value.Removes;
+                if (theirDelta >= 0)
                 {
                     return false;
                 }
                 if (self.RawDict.TryGetValue(entry.Key, out var mine))
                 {
-                    var resultMultiplicity = (int)mine.Multiplicity + entryDelta;
+                    var resultMultiplicity = (int)mine.Multiplicity + theirDelta;
                     return resultMultiplicity <= 0;
                 }
                 else
@@ -196,18 +196,18 @@ namespace SpacetimeDB
         /// Apply a collection of changes to a multidictionary.
         /// </summary>
         /// <param name="delta">The changes to apply.</param>
-        /// <param name="onInsert">Called on rows that were inserted.</param>
-        /// <param name="onUpdate">Called on rows that were updated (not including multiplicity changes).</param>
-        /// <param name="onRemove">Called on rows that were removed.</param>
+        /// <param name="wasInserted">Will be populated with inserted KVPs.</param>
+        /// <param name="wasUpdated">Will be populated with updated KVPs.</param>
+        /// <param name="wasRemoved">Will be populated with removed KVPs.</param>
         public void Apply(MultiDictionaryDelta<TKey, TValue> delta, List<KeyValuePair<TKey, TValue>> wasInserted, List<(TKey Key, TValue OldValue, TValue NewValue)> wasUpdated, List<KeyValuePair<TKey, TValue>> wasRemoved)
         {
             foreach (var (key, their) in delta.Entries)
             {
-                var entryDelta = (int)their.Inserts - (int)their.Removes;
+                var theirDelta = (int)their.Inserts - (int)their.Removes;
 
                 if (RawDict.TryGetValue(key, out var my))
                 {
-                    var newMultiplicity = (int)my.Multiplicity + entryDelta;
+                    var newMultiplicity = (int)my.Multiplicity + theirDelta;
                     if (newMultiplicity > 0)
                     {
                         if (ValueComparer.Equals(my.Value, their.Value))
@@ -215,9 +215,9 @@ namespace SpacetimeDB
                             // Update the count, NOT dispatching an update event.
 
                             // It sort of matters if we use my.Value or their.Value here:
-                            // we'd prefer to keep stricter equalities like pointer equality intact if possible.
-                            // So even though my.Value and theirValue are "equal", prefer using my.Value for
-                            // pointer stability reasons.
+                            // They may satisfy `Equals` but not actually have equal pointers.
+                            // We'd prefer to keep pointers stable if they don't need to change.
+                            // So even though my.Value and theirValue are "equal", prefer using my.Value.
                             RawDict[key] = (my.Value, (uint)newMultiplicity);
                         }
                         else
@@ -235,7 +235,7 @@ namespace SpacetimeDB
                         // This is a removal.
                         if (newMultiplicity < 0)
                         {
-                            PseudoThrow($"Internal error: Removing row with key {key} {-entryDelta} times, but it is only present {my.Multiplicity} times.");
+                            PseudoThrow($"Internal error: Removing row with key {key} {-theirDelta} times, but it is only present {my.Multiplicity} times.");
                         }
 
                         RawDict.Remove(key);
@@ -245,19 +245,19 @@ namespace SpacetimeDB
                 else
                 {
                     // Key is not present in map.
-                    if (entryDelta < 0)
+                    if (theirDelta < 0)
                     {
-                        PseudoThrow($"Internal error: Removing row with key {key} {-entryDelta} times, but it not present.");
+                        PseudoThrow($"Internal error: Removing row with key {key} {-theirDelta} times, but it not present.");
                     }
-                    else if (entryDelta == 0)
+                    else if (theirDelta == 0)
                     {
                         // Hmm.
                         // This is not actually a problem.
                         // Do nothing.
                     }
-                    else if (entryDelta > 0)
+                    else if (theirDelta > 0)
                     {
-                        RawDict[key] = (their.Value, (uint)entryDelta);
+                        RawDict[key] = (their.Value, (uint)theirDelta);
                         wasInserted.Add(new(key, their.Value));
                     }
                 }
