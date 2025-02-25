@@ -40,6 +40,7 @@ public class MultiDictionaryTests
     [Fact]
     public void Equality()
     {
+        // No matter the order we add elements to the multidictionary, the result should be the same.
         ListWithNormalizedDuplicates(Gen.Byte[1, 10], Gen.Byte[1, 10], EqualityComparer<byte>.Default).Sample(list =>
         {
             var m1 = MultiDictionary<byte, byte>.FromEnumerable(list, EqualityComparer<byte>.Default, EqualityComparer<byte>.Default);
@@ -86,6 +87,10 @@ public class MultiDictionaryTests
     {
         ListWithRemovals(Gen.Byte[1, 10], Gen.Byte[1, 10], EqualityComparer<byte>.Default).Sample((list, removals) =>
         {
+            // Build up two MultiDictionaries:
+            // - for m1, add everything, then remove stuff.
+            // - for m2, only add the non-removed stuff.
+            // The result should be the same.
             var m1 = MultiDictionary<byte, byte>.FromEnumerable(list, EqualityComparer<byte>.Default, EqualityComparer<byte>.Default);
             var m2 = new MultiDictionary<byte, byte>(EqualityComparer<byte>.Default, EqualityComparer<byte>.Default);
             foreach (var (kvp, remove) in list.Zip(removals))
@@ -104,12 +109,12 @@ public class MultiDictionaryTests
         });
     }
 
-    // Check that MultiDictionaryDelta is in fact a CRDT.
     [Fact]
     public void ShuffleDelta()
     {
         ListWithRemovals(Gen.Byte[1, 10], Gen.Byte[1, 10], EqualityComparer<byte>.Default).Sample((list, removals) =>
         {
+            // Check that no matter the order you apply Adds and Removes to a MultiDictionaryDelta, the result is the same.
             var m1 = new MultiDictionaryDelta<byte, byte>(EqualityComparer<byte>.Default, EqualityComparer<byte>.Default);
             var m2 = new MultiDictionaryDelta<byte, byte>(EqualityComparer<byte>.Default, EqualityComparer<byte>.Default);
             var listRemovals = list.Zip(removals).ToList();
@@ -141,15 +146,15 @@ public class MultiDictionaryTests
         });
     }
 
-    // Note: this does not check proper batch updates yet, since I wasn't sure how to randomly generate them properly.
     [Fact]
     public void ChunkedRemovals()
     {
         var maxLength = 32;
         Gen.Select(ListWithRemovals(Gen.Byte[1, 10], Gen.Byte[1, 10], EqualityComparer<byte>.Default, maxLength), Gen.Int[0, 32].List[0, 5]).Sample((listRemovals, cuts) =>
         {
-            // When looking at test failures for this test, keep in mind we do some post-processing of the sample input data.
-            // Probably there's a better way to rewrite it...
+            // Test that building up a MultiDictionary an operation-at-a-time is the same as randomly grouping the operations and applying them in chunks using MultiDictionaryDeltas.
+            // Note: When looking at test failures for this test, keep in mind we do some post-processing of the sample input data.
+            // So the listed `removals` and `cuts` may be changed slightly during the test.
             var (list, removals) = listRemovals;
             cuts.Add(0);
             cuts.Add(maxLength);
