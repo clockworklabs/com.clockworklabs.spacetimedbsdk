@@ -13,16 +13,16 @@ namespace SpacetimeDB.Types
     [DataContract]
     public sealed partial class Message
     {
-        [DataMember(Name = "sender")]
+        [DataMember(Name = "Sender")]
         public SpacetimeDB.Identity Sender;
-        [DataMember(Name = "sent")]
-        public SpacetimeDB.Timestamp Sent;
-        [DataMember(Name = "text")]
+        [DataMember(Name = "Sent")]
+        public long Sent;
+        [DataMember(Name = "Text")]
         public string Text;
 
         public Message(
             SpacetimeDB.Identity Sender,
-            SpacetimeDB.Timestamp Sent,
+            long Sent,
             string Text
         )
         {
