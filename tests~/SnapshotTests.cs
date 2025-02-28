@@ -261,7 +261,7 @@ public class SnapshotTests
     private static Message SampleMessage(string identity, long sentMicrosecondsSinceUnixEpoch, string text) => new()
     {
         Sender = Identity.From(Convert.FromBase64String(identity)),
-        Sent = sentMicrosecondsSinceUnixEpoch,
+        Sent = new Timestamp(sentMicrosecondsSinceUnixEpoch),
         Text = text
     };
 

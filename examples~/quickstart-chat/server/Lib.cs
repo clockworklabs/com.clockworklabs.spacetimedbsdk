@@ -15,7 +15,7 @@ public static partial class Module
     public partial class Message
     {
         public Identity Sender;
-        public long Sent;
+        public Timestamp Sent;
         public string Text = "";
     }
     
@@ -52,7 +52,7 @@ public static partial class Module
             {
                 Sender = ctx.Sender,
                 Text = text,
-                Sent = ctx.Timestamp.MicrosecondsSinceUnixEpoch,
+                Sent = ctx.Timestamp,
             }
         );
     }
