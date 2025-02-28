@@ -50,7 +50,7 @@ namespace SpacetimeDB.Types
                 this.Name = "";
             }
 
-            string IReducerArgs.ReducerName => "SetName";
+            string IReducerArgs.ReducerName => "set_name";
         }
     }
 

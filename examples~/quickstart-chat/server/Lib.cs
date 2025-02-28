@@ -2,7 +2,7 @@ using SpacetimeDB;
 
 public static partial class Module
 {
-    [Table(Name = "User", Public = true)]
+    [Table(Name = "user", Public = true)]
     public partial class User
     {
         [PrimaryKey]
@@ -11,7 +11,7 @@ public static partial class Module
         public bool Online;
     }
     
-    [Table(Name = "Message", Public = true)]
+    [Table(Name = "message", Public = true)]
     public partial class Message
     {
         public Identity Sender;
@@ -24,11 +24,11 @@ public static partial class Module
     {
         name = ValidateName(name);
 
-        var user = ctx.Db.User.Identity.Find(ctx.Sender);
+        var user = ctx.Db.user.Identity.Find(ctx.Sender);
         if (user is not null)
         {
             user.Name = name;
-            ctx.Db.User.Identity.Update(user);
+            ctx.Db.user.Identity.Update(user);
         }
     }
     
@@ -47,7 +47,7 @@ public static partial class Module
     {
         text = ValidateMessage(text);
         Log.Info(text);
-        ctx.Db.Message.Insert(
+        ctx.Db.message.Insert(
             new Message
             {
                 Sender = ctx.Sender,
@@ -71,20 +71,20 @@ public static partial class Module
     public static void ClientConnected(ReducerContext ctx)
     {
         Log.Info($"Connect {ctx.Sender}");
-        var user = ctx.Db.User.Identity.Find(ctx.Sender);
+        var user = ctx.Db.user.Identity.Find(ctx.Sender);
 
         if (user is not null)
         {
             // If this is a returning user, i.e., we already have a `User` with this `Identity`,
             // set `Online: true`, but leave `Name` and `Identity` unchanged.
             user.Online = true;
-            ctx.Db.User.Identity.Update(user);
+            ctx.Db.user.Identity.Update(user);
         }
         else
         {
             // If this is a new user, create a `User` object for the `Identity`,
             // which is online, but hasn't set a name.
-            ctx.Db.User.Insert(
+            ctx.Db.user.Insert(
                 new User
                 {
                     Name = null,
@@ -98,13 +98,13 @@ public static partial class Module
     [Reducer(ReducerKind.ClientDisconnected)]
     public static void ClientDisconnected(ReducerContext ctx)
     {
-        var user = ctx.Db.User.Identity.Find(ctx.Sender);
+        var user = ctx.Db.user.Identity.Find(ctx.Sender);
 
         if (user is not null)
         {
             // This user should exist, so set `Online: false`.
             user.Online = false;
-            ctx.Db.User.Identity.Update(user);
+            ctx.Db.user.Identity.Update(user);
         }
         else
         {
