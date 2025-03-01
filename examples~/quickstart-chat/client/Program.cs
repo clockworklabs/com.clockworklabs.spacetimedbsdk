@@ -77,7 +77,9 @@ void OnDisconnect(DbConnection conn, Exception? e)
     if (e != null)
     {
         Console.Write($"Disconnected abnormally: {e}");
-    } else {
+    }
+    else
+    {
         Console.Write($"Disconnected normally.");
     }
 }
