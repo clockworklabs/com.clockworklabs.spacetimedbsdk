@@ -19,7 +19,7 @@ void Main()
     // Builds and connects to the database
     DbConnection? conn = null;
     conn = ConnectToDB();
-    // Registers to run in response to database events.
+    // Registers callbacks to run in response to database events.
     RegisterCallbacks(conn);
     // Declare a threadsafe cancel token to cancel the process loop
     var cancellationTokenSource = new CancellationTokenSource();
