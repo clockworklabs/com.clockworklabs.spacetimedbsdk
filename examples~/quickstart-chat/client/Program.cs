@@ -49,7 +49,7 @@ DbConnection ConnectToDB()
         .WithToken(AuthToken.Token)
         .OnConnect(OnConnected)
         .OnConnectError(OnConnectError)
-        .OnDisconnect(OnDisconnect)
+        .OnDisconnect(OnDisconnected)
         .Build();
     return conn;
 }
@@ -72,7 +72,7 @@ void OnConnectError(Exception e)
 }
 
 /// Our `OnDisconnect` callback: print a note, then exit the process.
-void OnDisconnect(DbConnection conn, Exception? e)
+void OnDisconnected(DbConnection conn, Exception? e)
 {
     if (e != null)
     {
@@ -132,6 +132,9 @@ void User_OnUpdate(EventContext ctx, User oldValue, User newValue)
 /// Our `Message.OnInsert` callback: print new messages.
 void Message_OnInsert(EventContext ctx, Message insertedValue)
 {
+    // We are filtering out messages inserted during the subscription being applied,
+    // since we will be printing those in the OnSubscriptionApplied callback,
+    // where we will be able to first sort the messages before printing.
     if (ctx.Event is not Event<Reducer>.SubscribeApplied)
     {
         PrintMessage(ctx.Db, insertedValue);
