@@ -2,10 +2,9 @@ using SpacetimeDB;
 
 public static partial class Module
 {
-    [SpacetimeDB.Table(Name = "ExampleData")]
+    [SpacetimeDB.Table(Name = "ExampleData", Public = true)]
     public partial struct ExampleData
     {
-        [SpacetimeDB.AutoInc]
         [SpacetimeDB.PrimaryKey]
         public uint Id;
 
@@ -14,9 +13,9 @@ public static partial class Module
     }
 
     [SpacetimeDB.Reducer]
-    public static void Clear(ReducerContext ctx)
+    public static void Delete(ReducerContext ctx, uint id)
     {
-        ctx.Db.ExampleData.Indexed.Delete((0, uint.MaxValue));
+        ctx.Db.ExampleData.Id.Delete(id);
     }
 
     [SpacetimeDB.Reducer]

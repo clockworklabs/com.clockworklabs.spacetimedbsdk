@@ -36,10 +36,12 @@ DbConnection ConnectToDB()
 
 // We assume we're the only one interacting with the server for this test.
 
+uint waiting = 0;
+bool applied = false;
+
 void OnConnected(DbConnection conn, Identity identity, string authToken)
 {
     Log.Debug("Connected to btree-repro");
-    conn.Reducers.Clear();
     conn.SubscriptionBuilder()
         .OnApplied(OnSubscriptionApplied)
         .OnError((ctx, err) =>
@@ -50,9 +52,20 @@ void OnConnected(DbConnection conn, Identity identity, string authToken)
 
     conn.Reducers.OnAdd += (ReducerEventContext ctx, uint id, uint indexed) =>
     {
+        Log.Info("Got Add callback");
+        waiting--;
+        ValidateBTreeIndexes(ctx);
+    };
+
+    conn.Reducers.OnDelete += (ReducerEventContext ctx, uint id) =>
+    {
+        Log.Info("Got Delete callback");
+        waiting--;
         ValidateBTreeIndexes(ctx);
     };
 }
+
+const uint MAX_ID = 10;
 
 void ValidateBTreeIndexes(IRemoteDbContext conn)
 {
@@ -61,25 +74,38 @@ void ValidateBTreeIndexes(IRemoteDbContext conn)
     {
         Debug.Assert(conn.Db.ExampleData.Indexed.Filter(data.Id).Contains(data));
     }
-}
+    var outOfIndex = conn.Db.ExampleData.Iter().ToHashSet();
 
-bool Done = false;
+    for (uint i = 0; i < MAX_ID; i++)
+    {
+        foreach (var data in conn.Db.ExampleData.Indexed.Filter(i))
+        {
+            Debug.Assert(outOfIndex.Contains(data));
+        }
+    }
+}
 
 void OnSubscriptionApplied(SubscriptionEventContext context)
 {
-    context.Reducers.Add(0, 1);
-    context.Reducers.Add(0, 1);
-    context.Reducers.Add(0, 2);
-    context.Reducers.Add(0, 1);
-    context.Reducers.Add(0, 3);
-    context.Reducers.Add(0, 1);
-    Log.Debug("Success");
-    Done = true;
+    Log.Debug("Calling Add");
+    context.Reducers.Add(1, 1);
+    applied = true;
+    waiting++;
+    Log.Debug("Calling Delete");
+    context.Reducers.Delete(1);
+    waiting++;
 }
 
+System.AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
+{
+    Log.Exception($"Unhandled exception: {sender} {args}");
+    Environment.Exit(1);
+};
 var db = ConnectToDB();
-while (!Done)
+while (!applied || waiting > 0)
 {
     db.FrameTick();
     Thread.Sleep(100);
 }
+Log.Info("Success");
+Environment.Exit(0);
