@@ -20,8 +20,7 @@ namespace SpacetimeDB.Types
     {
         public RemoteTables(DbConnection conn)
         {
-            AddTable(Message = new(conn));
-            AddTable(User = new(conn));
+            AddTable(ExampleData = new(conn));
         }
     }
 
@@ -430,10 +429,8 @@ namespace SpacetimeDB.Types
             var encodedArgs = update.ReducerCall.Args;
             return update.ReducerCall.ReducerName switch
             {
-                "identity_connected" => BSATNHelpers.Decode<Reducer.IdentityConnected>(encodedArgs),
-                "identity_disconnected" => BSATNHelpers.Decode<Reducer.IdentityDisconnected>(encodedArgs),
-                "send_message" => BSATNHelpers.Decode<Reducer.SendMessage>(encodedArgs),
-                "set_name" => BSATNHelpers.Decode<Reducer.SetName>(encodedArgs),
+                "Add" => BSATNHelpers.Decode<Reducer.Add>(encodedArgs),
+                "Delete" => BSATNHelpers.Decode<Reducer.Delete>(encodedArgs),
                 var reducer => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
             };
         }
@@ -455,10 +452,8 @@ namespace SpacetimeDB.Types
             var eventContext = (ReducerEventContext)context;
             return reducer switch
             {
-                Reducer.IdentityConnected args => Reducers.InvokeIdentityConnected(eventContext, args),
-                Reducer.IdentityDisconnected args => Reducers.InvokeIdentityDisconnected(eventContext, args),
-                Reducer.SendMessage args => Reducers.InvokeSendMessage(eventContext, args),
-                Reducer.SetName args => Reducers.InvokeSetName(eventContext, args),
+                Reducer.Add args => Reducers.InvokeAdd(eventContext, args),
+                Reducer.Delete args => Reducers.InvokeDelete(eventContext, args),
                 _ => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
             };
         }
