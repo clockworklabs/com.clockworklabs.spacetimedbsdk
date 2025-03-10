@@ -10,13 +10,13 @@ The Unity SDK uses the same code as the C# SDK. You can find the documentation f
 
 There is also a comprehensive Unity tutorial/demo available:
 - [Unity Tutorial](https://spacetimedb.com/docs/unity/part-1) Doc
-- [Unity Demo](https://github.com/clockworklabs/SpacetimeDBUnityTutorial) Repo
+- [Unity Demo](https://github.com/clockworklabs/Blackholio) Repo
 
 ## Installation
 
 ### Unity Demo
 
-Download the [.unitypackage release](https://github.com/clockworklabs/SpacetimeDBUnityTutorial/releases) of our [Unity Part 1 tutorial](https://spacetimedb.com/docs/unity/part-1) demo that includes this SDK as a package manfiest requirement.
+The [Unity Demo](https://github.com/clockworklabs/Blackholio) Repo has a completed version of the Blackhol.io Unity demo project, or you can build the demo from scratch using the [Unity Tutorial](https://spacetimedb.com/docs/unity) doc.
 
 ### Standalone
 

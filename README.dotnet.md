@@ -6,7 +6,7 @@ This repository contains the [C#](https://learn.microsoft.com/en-us/dotnet/cshar
 
 ## Documentation
 
-The C# SDK has a [Quick Start](https://spacetimedb.com/docs/client-languages/csharp/csharp-sdk-quickstart-guide) guide and a [Reference](https://spacetimedb.com/docs/client-languages/csharp/csharp-sdk-reference).
+The C# SDK has a [Quick Start](https://spacetimedb.com/docs/sdks/c-sharp/quickstart) guide and a [Reference](https://spacetimedb.com/docs/sdks/c-sharp).
 
 ## Installation
 
