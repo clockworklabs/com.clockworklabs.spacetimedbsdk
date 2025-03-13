@@ -7,7 +7,7 @@ public class Tests
     [Fact]
     public static void GenericEqualityComparerCheck()
     {
-        // Tests the behavior of the GenericEqualityComparer function
+        // Validates the behavior of the GenericEqualityComparer's Equals function
 
         // Byte Arrays
         byte[] byteArray = new byte[10];
@@ -21,12 +21,10 @@ public class Tests
 
         // Integers
         int integer = 5;
-        int integerByRef = integer;
         int integerByValue = 5;
         int integerUnequalValue = 7;
         string integerAsDifferingType = "5";
 
-        Assert.True(GenericEqualityComparer.Instance.Equals(integer, integerByRef));
         Assert.True(GenericEqualityComparer.Instance.Equals(integer, integerByValue));
         Assert.False(GenericEqualityComparer.Instance.Equals(integer, integerUnequalValue));
         // GenericEqualityComparer does not support to converting datatypes and will fail this test
@@ -41,6 +39,8 @@ public class Tests
         Assert.True(GenericEqualityComparer.Instance.Equals(testString, testStringByRef));
         Assert.True(GenericEqualityComparer.Instance.Equals(testString, testStringByValue));
         Assert.False(GenericEqualityComparer.Instance.Equals(testString, testStringUnequalValue));
+
+        // Note: We are limited to only [SpacetimeDB.Type]
 
         // Identity and User
         Identity identity = Identity.From(Convert.FromBase64String("l0qzG1GPRtC1mwr+54q98tv0325gozLc6cNzq4vrzqY="));
@@ -64,5 +64,21 @@ public class Tests
         Assert.False(GenericEqualityComparer.Instance.Equals(testUser, testUserUnequalIdentityValue));
         Assert.False(GenericEqualityComparer.Instance.Equals(testUser, testUserUnequalNameValue));
         Assert.False(GenericEqualityComparer.Instance.Equals(testUser, testUserUnequalOnlineValue));
+
+        // TaggedEnum using Status record
+        Status statusCommitted = new Status.Committed(default);
+        Status statusCommittedByRef = statusCommitted;
+        Status statusCommittedByValue = new Status.Committed(default);
+        Status statusFailed = new Status.Failed("Failed");
+        Status statusFailedByValue = new Status.Failed("Failed");
+        Status statusFailedUnequalValue = new Status.Failed("unequalFailed");
+        Status statusOutOfEnergy = new Status.OutOfEnergy(default);
+
+        Assert.True(GenericEqualityComparer.Instance.Equals(statusCommitted, statusCommittedByRef));
+        Assert.True(GenericEqualityComparer.Instance.Equals(statusCommitted, statusCommittedByValue));
+        Assert.False(GenericEqualityComparer.Instance.Equals(statusCommitted, statusFailed));
+        Assert.True(GenericEqualityComparer.Instance.Equals(statusFailed, statusFailedByValue));
+        Assert.False(GenericEqualityComparer.Instance.Equals(statusFailed, statusFailedUnequalValue));
+        Assert.False(GenericEqualityComparer.Instance.Equals(statusCommitted, statusOutOfEnergy));
     }
 }
