@@ -9,8 +9,6 @@ using System.Threading.Tasks;
 using SpacetimeDB.BSATN;
 using SpacetimeDB.Internal;
 using SpacetimeDB.ClientApi;
-using Thread = System.Threading.Thread;
-
 
 namespace SpacetimeDB
 {
@@ -166,7 +164,7 @@ namespace SpacetimeDB
         private readonly Dictionary<Guid, TaskCompletionSource<OneOffQueryResponse>> waitingOneOffQueries = new();
 
         private bool isClosing;
-        private readonly Thread networkMessageProcessThread;
+        private readonly Task networkMessageProcessTask;
         public readonly Stats stats = new();
 
         protected DbConnectionBase()
@@ -190,8 +188,7 @@ namespace SpacetimeDB
             };
 #endif
 
-            networkMessageProcessThread = new Thread(PreProcessMessages);
-            networkMessageProcessThread.Start();
+            networkMessageProcessTask = Task.Run(PreProcessMessages);
         }
 
         struct UnprocessedMessage
@@ -351,7 +348,7 @@ namespace SpacetimeDB
             };
         }
 
-        void PreProcessMessages()
+        private void PreProcessMessages()
         {
             while (!isClosing)
             {
