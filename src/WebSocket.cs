@@ -6,7 +6,6 @@ using System.Collections.Concurrent;
 using System.Linq;
 using System.Net.Sockets;
 using System.Net.WebSockets;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -36,7 +35,7 @@ namespace SpacetimeDB
         private readonly byte[] _receiveBuffer = new byte[MAXMessageSize];
         private readonly ConcurrentQueue<Action> dispatchQueue = new();
 
-        protected ClientWebSocket Ws = new();
+        protected readonly ClientWebSocket Ws = new();
 
         public WebSocket(ConnectOptions options)
         {
@@ -49,7 +48,7 @@ namespace SpacetimeDB
         public event MessageEventHandler? OnMessage;
         public event CloseEventHandler? OnClose;
 
-        public bool IsConnected { get { return Ws != null && Ws.State == WebSocketState.Open; } }
+        public bool IsConnected => Ws.State == WebSocketState.Open;
 
         public async Task Connect(string? auth, string host, string nameOrAddress, ConnectionId connectionId, Compression compression, bool light)
         {
@@ -65,10 +64,6 @@ namespace SpacetimeDB
             if (!string.IsNullOrEmpty(auth))
             {
                 Ws.Options.SetRequestHeader("Authorization", $"Bearer {auth}");
-            }
-            else
-            {
-                Ws.Options.UseDefaultCredentials = true;
             }
 
             try
@@ -245,7 +240,9 @@ namespace SpacetimeDB
 
         public Task Close(WebSocketCloseStatus code = WebSocketCloseStatus.NormalClosure)
         {
-            Ws?.CloseAsync(code, "Disconnecting normally.", CancellationToken.None);
+            if (IsConnected) {
+                Ws.CloseAsync(code, "Disconnecting normally.", CancellationToken.None);
+            }
 
             return Task.CompletedTask;
         }
@@ -289,7 +286,7 @@ namespace SpacetimeDB
 
                     var messageBSATN = new ClientMessage.BSATN();
                     var encodedMessage = IStructuralReadWrite.ToBytes(messageBSATN, message);
-                    await Ws!.SendAsync(encodedMessage, WebSocketMessageType.Binary, true, CancellationToken.None);
+                    await Ws.SendAsync(encodedMessage, WebSocketMessageType.Binary, true, CancellationToken.None);
                 }
             }
             catch (Exception e)
@@ -301,7 +298,7 @@ namespace SpacetimeDB
 
         public WebSocketState GetState()
         {
-            return Ws!.State;
+            return Ws.State;
         }
 
         public void Update()

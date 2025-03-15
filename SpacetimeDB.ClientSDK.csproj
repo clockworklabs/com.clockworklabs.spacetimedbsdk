@@ -28,6 +28,7 @@
     <PackageReference Include="SpacetimeDB.BSATN.Runtime" Version="1.0.*" />
 
     <InternalsVisibleTo Include="SpacetimeDB.Tests" />
+    <PackageReference Include="System.Threading.Channels" Version="9.0.3" />
   </ItemGroup>
 
 
