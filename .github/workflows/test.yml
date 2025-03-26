@@ -53,6 +53,11 @@ jobs:
 
       # Run cheap .NET tests first. If those fail, no need to run expensive Unity tests.
 
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+        with:
+          global-json-file: SpacetimeDB~/modules/global.json
+
       - name: Override NuGet packages
         run: |
           dotnet pack SpacetimeDB~/crates/bindings-csharp/BSATN.Runtime
@@ -81,6 +86,7 @@ jobs:
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
+      
 
       - name: Cache Rust dependencies
         uses: Swatinem/rust-cache@v2
