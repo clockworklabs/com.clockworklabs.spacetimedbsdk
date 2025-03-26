@@ -1,5 +1,5 @@
 // Server module for regression tests.
-// Everything we're testing for happens SDK-side so this module is very uniniteresting.
+// Everything we're testing for happens SDK-side so this module is very uninteresting.
 
 using SpacetimeDB;
 

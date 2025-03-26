@@ -37,8 +37,6 @@ DbConnection ConnectToDB()
     return conn;
 }
 
-// We assume we're the only one interacting with the server for this test.
-
 uint waiting = 0;
 bool applied = false;
 SubscriptionHandle? handle = null;
