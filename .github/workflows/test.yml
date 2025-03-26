@@ -128,8 +128,8 @@ jobs:
           spacetime start &
           disown
 
-      - name: Run btree repro
-        run: bash tools~/btree-repro.sh SpacetimeDB~
+      - name: Run regression tests
+        run: bash tools~/run-regression-tests.sh SpacetimeDB~
 
       - name: Publish unity-tests module to SpacetimeDB
         working-directory: unity-tests~/server-rust
