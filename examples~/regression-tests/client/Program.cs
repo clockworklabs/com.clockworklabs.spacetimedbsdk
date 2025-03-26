@@ -1,4 +1,7 @@
-﻿/// Check that an issue with BTreeIndexes retaining rows after they have been deleted is resolved.
+﻿/// Regression tests run with a live server.
+/// To run these, run a local SpacetimeDB via `spacetime start`,
+/// then in a separate terminal run `tools~/run-regression-tests.sh PATH_TO_SPACETIMEDB_REPO_CHECKOUT`.
+/// This is done on CI in .github/workflows/test.yml.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
@@ -42,7 +45,7 @@ SubscriptionHandle? handle = null;
 
 void OnConnected(DbConnection conn, Identity identity, string authToken)
 {
-    Log.Debug("Connected to btree-repro");
+    Log.Debug($"Connected to {DBNAME} on {HOST}");
     handle = conn.SubscriptionBuilder()
         .OnApplied(OnSubscriptionApplied)
         .OnError((ctx, err) =>
@@ -68,6 +71,8 @@ void OnConnected(DbConnection conn, Identity identity, string authToken)
 
 const uint MAX_ID = 10;
 
+// Test that indexes remain in sync with the expected table state when deletes are received.
+// This used to fail, when row types did not correctly implement IEquatable.
 void ValidateBTreeIndexes(IRemoteDbContext conn)
 {
     Log.Debug("Checking indexes...");
@@ -84,22 +89,30 @@ void ValidateBTreeIndexes(IRemoteDbContext conn)
             Debug.Assert(outOfIndex.Contains(data));
         }
     }
+    Log.Debug("   Indexes are good.");
 }
 
 void OnSubscriptionApplied(SubscriptionEventContext context)
 {
+    // Do some operations that alter row state;
+    // we will check that everything is in sync in the callbacks for these reducer calls.
     Log.Debug("Calling Add");
+    waiting++;
     context.Reducers.Add(1, 1);
     applied = true;
-    waiting++;
+
     Log.Debug("Calling Delete");
-    context.Reducers.Delete(1);
     waiting++;
+    context.Reducers.Delete(1);
+
     Log.Debug("Calling Add");
+    waiting++;
     context.Reducers.Add(1, 1);
     applied = true;
-    waiting++;
+
+    // Now unsubscribe and check that the unsubscribe is actually applied.
     Log.Debug("Calling Unsubscribe");
+    waiting++;
     handle?.UnsubscribeThen((ctx) =>
     {
         Log.Debug("Received Unsubscribe");
@@ -114,14 +127,16 @@ System.AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
     Environment.Exit(1);
 };
 var db = ConnectToDB();
+Log.Info("Starting timer");
+const int TIMEOUT = 20; // seconds;
 var start = DateTime.Now;
 while (!applied || waiting > 0)
 {
     db.FrameTick();
     Thread.Sleep(100);
-    if ((DateTime.Now - start).Seconds > 10)
+    if ((DateTime.Now - start).Seconds > TIMEOUT)
     {
-        Log.Error("Timeout, all events should have elapsed in 10 seconds!");
+        Log.Error($"Timeout, all events should have elapsed in {TIMEOUT} seconds!");
         Environment.Exit(1);
     }
 }

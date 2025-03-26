@@ -1,3 +1,6 @@
+// Server module for regression tests.
+// Everything we're testing for happens SDK-side so this module is very uniniteresting.
+
 using SpacetimeDB;
 
 public static partial class Module
