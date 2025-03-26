@@ -128,7 +128,10 @@ jobs:
           spacetime start &
           disown
 
-      - name: Publish module to SpacetimeDB
+      - name: Run btree repro
+        run: bash tools~/btree-repro.sh
+
+      - name: Publish unity-tests module to SpacetimeDB
         working-directory: unity-tests~/server-rust
         run: |
           spacetime logout && spacetime login --server-issued-login local

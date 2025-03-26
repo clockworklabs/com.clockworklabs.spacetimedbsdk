@@ -1,4 +1,4 @@
-﻿// See https://aka.ms/new-console-template for more information
+﻿/// Check that an issue with BTreeIndexes retaining rows after they have been deleted is resolved.
 
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
