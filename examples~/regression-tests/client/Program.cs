@@ -38,11 +38,12 @@ DbConnection ConnectToDB()
 
 uint waiting = 0;
 bool applied = false;
+SubscriptionHandle? handle = null;
 
 void OnConnected(DbConnection conn, Identity identity, string authToken)
 {
     Log.Debug("Connected to btree-repro");
-    conn.SubscriptionBuilder()
+    handle = conn.SubscriptionBuilder()
         .OnApplied(OnSubscriptionApplied)
         .OnError((ctx, err) =>
         {
@@ -94,6 +95,17 @@ void OnSubscriptionApplied(SubscriptionEventContext context)
     Log.Debug("Calling Delete");
     context.Reducers.Delete(1);
     waiting++;
+    Log.Debug("Calling Add");
+    context.Reducers.Add(1, 1);
+    applied = true;
+    waiting++;
+    Log.Debug("Calling Unsubscribe");
+    handle?.UnsubscribeThen((ctx) =>
+    {
+        Log.Debug("Received Unsubscribe");
+        ValidateBTreeIndexes(ctx);
+        waiting--;
+    });
 }
 
 System.AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
@@ -102,10 +114,16 @@ System.AppDomain.CurrentDomain.UnhandledException += (sender, args) =>
     Environment.Exit(1);
 };
 var db = ConnectToDB();
+var start = DateTime.Now;
 while (!applied || waiting > 0)
 {
     db.FrameTick();
     Thread.Sleep(100);
+    if ((DateTime.Now - start).Seconds > 10)
+    {
+        Log.Error("Timeout, all events should have elapsed in 10 seconds!");
+        Environment.Exit(1);
+    }
 }
 Log.Info("Success");
 Environment.Exit(0);

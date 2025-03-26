@@ -129,7 +129,7 @@ jobs:
           disown
 
       - name: Run btree repro
-        run: bash tools~/btree-repro.sh
+        run: bash tools~/btree-repro.sh SpacetimeDB~
 
       - name: Publish unity-tests module to SpacetimeDB
         working-directory: unity-tests~/server-rust

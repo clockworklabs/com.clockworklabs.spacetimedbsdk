@@ -11,11 +11,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client", "examples~\quickst
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "examples~", "examples~", "{E0CADA48-79A1-4490-ACEC-698EC7D2AB43}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "btree-repro", "btree-repro", "{4434F63A-3300-476E-82F3-D672B83E68E8}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "regression-tests", "regression-tests", "{4434F63A-3300-476E-82F3-D672B83E68E8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StdbModule", "examples~\btree-repro\server\StdbModule.csproj", "{A68A749E-CFE1-45CF-8BDA-929B2E677D72}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StdbModule", "examples~\regression-tests\server\StdbModule.csproj", "{A68A749E-CFE1-45CF-8BDA-929B2E677D72}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client", "examples~\btree-repro\client\client.csproj", "{5BB2A377-C44C-4310-8951-BB37F5EB8456}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "client", "examples~\regression-tests\client\client.csproj", "{5BB2A377-C44C-4310-8951-BB37F5EB8456}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
