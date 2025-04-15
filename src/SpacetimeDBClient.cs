@@ -195,7 +195,7 @@ namespace SpacetimeDB
                 SpacetimeDBNetworkManager._instance.StartCoroutine(PreProcessMessages());
 #endif
 #endif
-            
+
 #if !(UNITY_WEBGL && !UNITY_EDITOR)
             // For targets other than webgl we start a thread to pre-process messages
             networkMessageProcessThread = new Thread(PreProcessMessages);
@@ -368,7 +368,7 @@ namespace SpacetimeDB
         {
             while (!isClosing)
             {
-                
+
 #if UNITY_WEBGL && !UNITY_EDITOR
                 yield return null;
                 while (_messageQueue.Count > 0)
@@ -608,13 +608,13 @@ namespace SpacetimeDB
         {
             isClosing = true;
             connectionClosed = true;
-            
+
             // Only try to close if the connection is active
             if (webSocket.IsConnected)
             {
                 webSocket.Close();
             }
-            
+
             _preProcessCancellationTokenSource.Cancel();
         }
 

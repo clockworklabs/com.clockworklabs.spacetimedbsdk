@@ -60,7 +60,7 @@ namespace SpacetimeDB
 #else 
         public bool IsConnected { get { return Ws != null && Ws.State == WebSocketState.Open; } }
 #endif
-        
+
 #if UNITY_WEBGL && !UNITY_EDITOR
 [DllImport("__Internal")]
     private static extern void WebSocket_Init(
@@ -363,8 +363,8 @@ namespace SpacetimeDB
                 return Ws.CloseAsync(code, "Disconnecting normally.", CancellationToken.None);
             }
 #endif
-             return Task.CompletedTask;
-         }
+            return Task.CompletedTask;
+        }
 
         private Task? senderTask;
         private readonly ConcurrentQueue<ClientMessage> messageSendQueue = new();
