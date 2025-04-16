@@ -249,8 +249,8 @@ public class MultiDictionaryTests
         dict.Add(1, 2);
 
         var delta = new MultiDictionaryDelta<byte, byte>(EqualityComparer<byte>.Default, EqualityComparer<byte>.Default);
-        delta.Add(1, 3);
         delta.Add(1, 2);
+        delta.Add(1, 3);
         delta.Remove(1, 2);
         delta.Remove(1, 2);
 
