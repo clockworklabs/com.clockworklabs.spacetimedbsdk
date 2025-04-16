@@ -389,12 +389,27 @@ namespace SpacetimeDB
         /// </summary>
         public struct KeyDelta
         {
-            // In general, we don't know which of these are the Before and After until
-            // after we've accumulated all of the Adds and Removes for the relevant key.
-            // So, this information is exposed to clients through the getters below.
+            // The (one | two) values associated with this key.
+            // Invariant: If D2 is present, its Delta should be <= the Delta for D1.
+            // This is enforced by the Normalized method, which should be called after
+            // any other method that modifies this struct.
             ValueDelta D1;
             ValueDelta? D2;
 
+            private void Normalize()
+            {
+                if (D2 != null && D2.Value.Delta < D1.Delta)
+                {
+                    var tmp = D2.Value;
+                    D2 = D1;
+                    D1 = tmp;
+                }
+            }
+
+            /// <summary>
+            /// Construct a KeyDelta from a single ValueDelta.
+            /// </summary>
+            /// <param name="delta"></param>
             public KeyDelta(ValueDelta delta)
             {
                 D1 = delta;
@@ -456,6 +471,11 @@ namespace SpacetimeDB
                 }
             }
 
+            /// <summary>
+            /// Add a copy of this Value to this KeyDelta.
+            /// </summary>
+            /// <param name="value"></param>
+            /// <param name="equalityComparer"></param>
             public void Add(TValue value, IEqualityComparer<TValue> equalityComparer)
             {
                 if (equalityComparer.Equals(value, D1.Value))
@@ -476,6 +496,11 @@ namespace SpacetimeDB
                 Normalize();
             }
 
+            /// <summary>
+            /// Remove a copy of this Value from this KeyDelta.
+            /// </summary>
+            /// <param name="value"></param>
+            /// <param name="equalityComparer"></param>
             public void Remove(TValue value, IEqualityComparer<TValue> equalityComparer)
             {
                 if (equalityComparer.Equals(value, D1.Value))
@@ -496,16 +521,17 @@ namespace SpacetimeDB
                 Normalize();
             }
 
-            private void Normalize()
-            {
-                if (D2 != null && D2.Value.Delta < D1.Delta)
-                {
-                    var tmp = D2.Value;
-                    D2 = D1;
-                    D1 = tmp;
-                }
-            }
-
+            /// <summary>
+            /// Check if two KeyDeltas are equal.
+            /// 
+            /// If either is in an invalid state, this throws.
+            /// That means you should avoid comparing KeyDeltas
+            /// (and therefore MultiDictionaryDeltas) unless you are sure they are valid, i.e. until they have
+            /// absorbed all the necessary writes.
+            /// </summary>
+            /// <param name="other"></param>
+            /// <param name="equalityComparer"></param>
+            /// <returns></returns>
             public bool Equals(KeyDelta other, IEqualityComparer<TValue> equalityComparer)
             {
                 if (IsValueChange != other.IsValueChange) return false;
@@ -536,10 +562,8 @@ namespace SpacetimeDB
         }
 
         /// <summary>
-        /// For each key, track its old and new values.
-        /// Also track the number of times it has been removed and inserted.
-        /// We keep these separate so that we can debug-assert that a KVP has been removed enough times (in case
-        /// there are multiple copies of the KVP in the map we get applied to.)
+        /// For each key, track its value (or its old and new values).
+        /// Also track the deltas associated to the values for this key.
         /// </summary>
         readonly Dictionary<TKey, KeyDelta> RawDict;
 
