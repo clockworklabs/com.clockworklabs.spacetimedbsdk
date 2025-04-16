@@ -180,18 +180,18 @@ namespace SpacetimeDB
             {
                 if (their.Value.IsValueChange)
                 {
-                    // Updates don't count as removals.
+                    // Value changes are translated to Updates, not removals.
                     return false;
                 }
-                var theirNonUpdate = their.Value.NonValueChange;
-                if (theirNonUpdate.Delta >= 0)
+                var theirNonValueChange = their.Value.NonValueChange;
+                if (theirNonValueChange.Delta >= 0)
                 {
                     // Adds can't result in removals.
                     return false;
                 }
                 if (self.RawDict.TryGetValue(their.Key, out var mine))
                 {
-                    var resultMultiplicity = (int)mine.Multiplicity + theirNonUpdate.Delta;
+                    var resultMultiplicity = (int)mine.Multiplicity + theirNonValueChange.Delta;
                     return resultMultiplicity <= 0; // if < 0, we have a problem, but that's caught in Apply.
                 }
                 else
@@ -217,6 +217,8 @@ namespace SpacetimeDB
                 {
                     if (their.IsValueChange)
                     {
+                        // Their update expects to change the value associated with this key.
+
                         var (before, after) = their.ValueChange;
                         Debug.Assert(ValueComparer.Equals(my.Value, before.Value));
                         var reducedMultiplicity = (int)my.Multiplicity + before.Delta;
@@ -230,6 +232,9 @@ namespace SpacetimeDB
                     }
                     else
                     { // !their.IsValueChange
+                        // Their update does not expect to change the value associated with this key.
+                        // However, it may remove the key-value pair entirely.
+
                         var theirDelta = their.NonValueChange;
                         Debug.Assert(ValueComparer.Equals(my.Value, theirDelta.Value), $"mismatched value change: {my.Value} {theirDelta.Value} {their}");
                         var newMultiplicity = (int)my.Multiplicity + theirDelta.Delta;
