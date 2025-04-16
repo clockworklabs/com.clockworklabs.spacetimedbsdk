@@ -343,11 +343,18 @@ namespace SpacetimeDB
     internal struct MultiDictionaryDelta<TKey, TValue> : IEquatable<MultiDictionaryDelta<TKey, TValue>>
     {
         /// <summary>
-        /// A change to an individual value.
+        /// A change to an individual value associated to a key.
         /// </summary>
         public struct ValueDelta
         {
+            /// <summary>
+            /// The value stored.
+            /// </summary>
             public TValue Value;
+
+            /// <summary>
+            /// The change in multiplicity of the value.
+            /// </summary>
             public int Delta;
 
             public ValueDelta(TValue Value, int Delta)
@@ -366,19 +373,21 @@ namespace SpacetimeDB
         }
 
         /// <summary>
-        /// A change to the key associated with a value.
+        /// A change to a key-value pair.
+        /// 
+        /// - If the value associated to the key changes, then <c>.IsValueChange == true</c>; use <c>.ValueChange</c> to
+        ///     get the values before and after the change, along with their multiplicities.
+        ///     
+        /// - If the value associated to the key does not change, the key-value pair can still have multiplicity changes.
+        ///     Use <c>.NonValueChange</c> to get at this multiplicity information.
+        /// 
         /// </summary>
         public struct KeyDelta
         {
-            /// <summary>
-            /// The first value.
-            /// </summary>
+            // In general, we don't know which of these are the Before and After until
+            // after we've accumulated all of the Adds and Removes for the relevant key.
+            // So, this information is exposed to clients through the getters below.
             ValueDelta D1;
-
-            /// <summary>
-            /// The second value, if present.
-            /// If this is present, its Delta is guaranteed to be equal to or greater than D1's Delta.
-            /// </summary>
             ValueDelta? D2;
 
             public KeyDelta(ValueDelta delta)
@@ -389,7 +398,7 @@ namespace SpacetimeDB
 
             /// <summary>
             /// If this KeyDelta is a value change -- that is, it removes one value some number of times and adds another some number of times.
-            /// (If it isn't a value change, it just will consist of adds or removes for a single value)
+            /// (If it isn't a value change, it just will consist of adds or removes for a single value).
             /// </summary>
             public bool IsValueChange
             {
@@ -397,6 +406,8 @@ namespace SpacetimeDB
             }
 
             /// <summary>
+            /// The deltas in the case of this KeyDelta being a value change.
+            /// Guarantees <c>Before.Delta < 0 && After.Delta > 0</c>.
             /// </summary>
             public (ValueDelta Before, ValueDelta After) ValueChange
             {
@@ -433,7 +444,8 @@ namespace SpacetimeDB
                         {
                             return D1;
                         }
-                        // Otherwise, there's nothing we can do.
+                        // In this case, something strange is going on: both values have the same sign.
+                        // There's nothing sensible to do here, and this represents a server-side error, so just throw.
                         throw new InvalidOperationException($"Called NonValueChange on a ValueDelta in an ambiguous state: {this}");
                     }
                 }
@@ -447,10 +459,7 @@ namespace SpacetimeDB
                 }
                 else if (D2 == null)
                 {
-                    ValueDelta newD2 = new();
-                    newD2.Value = value;
-                    newD2.Delta = 1;
-                    D2 = newD2;
+                    D2 = new(value, +1);
                 }
                 else
                 {
@@ -470,10 +479,7 @@ namespace SpacetimeDB
                 }
                 else if (D2 == null)
                 {
-                    ValueDelta newD2 = new();
-                    newD2.Value = value;
-                    newD2.Delta = -1;
-                    D2 = newD2;
+                    D2 = new(value, -1);
                 }
                 else
                 {
