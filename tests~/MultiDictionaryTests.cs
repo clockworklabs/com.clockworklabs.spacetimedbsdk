@@ -241,4 +241,25 @@ public class MultiDictionaryTests
         var wasRemoved = new List<KeyValuePair<object, byte>>();
         dict.Apply(delta, wasInserted, wasMaybeUpdated, wasRemoved);
     }
+
+    [Fact]
+    public void InsertThenDeleteOfOldRow()
+    {
+        var dict = new MultiDictionary<byte, byte>(EqualityComparer<byte>.Default, EqualityComparer<byte>.Default);
+        dict.Add(1, 2);
+
+        var delta = new MultiDictionaryDelta<byte, byte>(EqualityComparer<byte>.Default, EqualityComparer<byte>.Default);
+        delta.Add(1, 3);
+        delta.Add(1, 2);
+        delta.Remove(1, 2);
+        delta.Remove(1, 2);
+
+        var wasInserted = new List<KeyValuePair<byte, byte>>();
+        var wasMaybeUpdated = new List<(byte key, byte oldValue, byte newValue)>();
+        var wasRemoved = new List<KeyValuePair<byte, byte>>();
+        dict.Apply(delta, wasInserted, wasMaybeUpdated, wasRemoved);
+#pragma warning disable xUnit2017
+        Assert.True(wasMaybeUpdated.Contains((1, 2, 3)), $"{dict}: {wasMaybeUpdated}");
+#pragma warning restore xUnit2017
+    }
 }
