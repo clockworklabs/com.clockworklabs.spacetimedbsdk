@@ -489,6 +489,8 @@ namespace SpacetimeDB
                 {
                     var d2 = D2.Value;
                     Debug.Assert(equalityComparer.Equals(value, d2.Value));
+                    // In release mode, the above assert won't fire.
+                    // This means that if we get conflicting updates, whichever one we saw first will win.
                     d2.Delta += 1;
                     D2 = d2;
                 }
@@ -514,6 +516,8 @@ namespace SpacetimeDB
                 {
                     var newD2 = D2.Value;
                     Debug.Assert(equalityComparer.Equals(value, newD2.Value));
+                    // In release mode, the above assert won't fire.
+                    // This means that if we get conflicting updates, whichever one we saw first will win.
                     newD2.Delta -= 1;
                     D2 = newD2;
                 }
