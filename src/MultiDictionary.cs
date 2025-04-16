@@ -4,7 +4,6 @@ using System.Text;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Data;
-using System.Security.Cryptography.X509Certificates;
 
 namespace SpacetimeDB
 {
