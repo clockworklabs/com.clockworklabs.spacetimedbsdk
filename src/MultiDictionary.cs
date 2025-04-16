@@ -490,7 +490,8 @@ namespace SpacetimeDB
                     var d2 = D2.Value;
                     Debug.Assert(equalityComparer.Equals(value, d2.Value));
                     // In release mode, the above assert won't fire.
-                    // This means that if we get conflicting updates, whichever one we saw first will win.
+                    // This means that if we get more than two values, the first two distinct values seen
+                    // will be the ones stored in the KeyDelta.
                     d2.Delta += 1;
                     D2 = d2;
                 }
@@ -517,7 +518,8 @@ namespace SpacetimeDB
                     var newD2 = D2.Value;
                     Debug.Assert(equalityComparer.Equals(value, newD2.Value));
                     // In release mode, the above assert won't fire.
-                    // This means that if we get conflicting updates, whichever one we saw first will win.
+                    // This means that if we get more than two values, the first two distinct values seen
+                    // will be the ones stored in the KeyDelta.
                     newD2.Delta -= 1;
                     D2 = newD2;
                 }
@@ -530,7 +532,7 @@ namespace SpacetimeDB
             /// If either is in an invalid state, this throws.
             /// That means you should avoid comparing KeyDeltas
             /// (and therefore MultiDictionaryDeltas) unless you are sure they are valid, i.e. until they have
-            /// absorbed all the necessary writes.
+            /// absorbed all the necessary Adds and Removes.
             /// </summary>
             /// <param name="other"></param>
             /// <param name="equalityComparer"></param>
