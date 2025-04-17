@@ -45,7 +45,6 @@ mergeInto(LibraryManager.library, {
                     _free(buffer);
                 }
             };
-            var __allocate = this.allocate;
             socket.onclose = function(event) {
                 if (manager.callbacks.close) {
                     var reasonStr = event.reason || "";
