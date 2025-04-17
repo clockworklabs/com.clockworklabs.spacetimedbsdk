@@ -74,7 +74,7 @@ namespace SpacetimeDB
             Debug.Assert(key != null);
             if (RawDict.TryGetValue(key, out var result))
             {
-                Debug.Assert(ValueComparer.Equals(value, result.Value), "Added key-value pair with mismatched value to existing data");
+                Debug.Assert(ValueComparer.Equals(value, result.Value), $"Added key-value pair with mismatched value to existing data, {key} {value} {result.Value}");
                 RawDict[key] = (value, result.Multiplicity + 1);
                 return false;
             }
@@ -106,6 +106,23 @@ namespace SpacetimeDB
             }
             return false;
         }
+
+        /// <summary>
+        /// The number of times a key occurs in the multidictionary.
+        /// All of these occurrences must map to the same value.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public uint Multiplicity(TKey key) => RawDict.ContainsKey(key) ? RawDict[key].Multiplicity : 0;
+
+        /// <summary>
+        /// The value associated with a key.
+        /// 
+        /// Throws if the key is not present.
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
+        public TValue this[TKey key] => RawDict[key].Value;
 
         /// <summary>
         /// Remove a key from the dictionary.
@@ -379,19 +396,34 @@ namespace SpacetimeDB
         /// <summary>
         /// A change to a key-value pair.
         /// 
-        /// - If the value associated to the key changes, then <c>.IsValueChange == true</c>; use <c>.ValueChange</c> to
-        ///     get the values before and after the change, along with their multiplicities.
-        ///     
-        /// - If the value associated to the key does not change, the key-value pair can still have multiplicity changes.
+        /// - If the value associated to the key does not change, then <c>.IsValueChange == false</c>;
+        ///     the key-value pair can only have multiplicity changes.
         ///     Use <c>.NonValueChange</c> to get at this multiplicity information.
         /// 
+        /// - If the value associated to the key does change, then <c>.IsValueChange == true</c>;
+        ///     use <c>.ValueChange</c> to get the values before and after the change, together with multiplicity information.
         /// </summary>
         public struct KeyDelta
         {
-            // The (one | two) values associated with this key.
-            // Invariant: If D2 is present, its Delta should be <= the Delta for D1.
-            // This is enforced by the Normalized method, which should be called after
-            // any other method that modifies this struct.
+            // The (one | two) ValueDeltas associated with this key.
+            //
+            // You can think of this struct as a HashSet with signed multiplicities that stores at most two values.
+            // 
+            // While we are accumulating changes to this key, we don't know which of the values we've
+            // seen so far is the old value, and which is the new value.
+            // (We can't look incoming values up in the existing dictionary for thread-safety reasons.)
+            //
+            // Once all changes are accumulated, we expect either:
+            // - There is only one value (NonValueChange)
+            // - There are two values:
+            //      - One with (-), one with (+) delta (ValueChange)
+            //      - One with 0, one with non-0 delta (This is odd, but we treat it as NonValueChange.)
+            //      - Both with the same delta sign. This represents an unrecoverable error, so we throw an exception.
+            //
+            // Invariant: If D2 is present, its (signed) Delta should be >= the Delta for D1.
+            // This is enforced by the Normalize method, which should be called after
+            // any other method that modifies this struct. This ensures that D1 holds the old value,
+            // and D2 holds the new value. But this guarantee is only present after all changes have been accumulated.
             ValueDelta D1;
             ValueDelta? D2;
 
@@ -432,7 +464,10 @@ namespace SpacetimeDB
             {
                 get
                 {
-                    Debug.Assert(IsValueChange);
+                    if (!IsValueChange)
+                    {
+                        throw new InvalidOperationException($"KeyDelta {this} is not a ValueChange");
+                    }
                     return (D1, D2!.Value);
                 }
             }
@@ -444,7 +479,11 @@ namespace SpacetimeDB
             {
                 get
                 {
-                    Debug.Assert(!IsValueChange);
+                    if (IsValueChange)
+                    {
+                        throw new Exception($"KeyDelta {this} is a ValueChange");
+                    }
+
                     if (D2 == null)
                     {
                         return D1;
@@ -463,9 +502,12 @@ namespace SpacetimeDB
                         {
                             return D1;
                         }
-                        // In this case, something strange is going on: both values have the same sign.
-                        // There's nothing sensible to do here, and this represents a server-side error, so just throw.
-                        throw new InvalidOperationException($"Called NonValueChange on a ValueDelta in an ambiguous state: {this}");
+                        else
+                        {
+                            // In this case, something strange is going on: both values have the same sign.
+                            // There's nothing sensible to do here, and this represents a server-side error, so just throw.
+                            throw new InvalidOperationException($"Called NonValueChange on a ValueDelta in an ambiguous state: {this}");
+                        }
                     }
                 }
             }
