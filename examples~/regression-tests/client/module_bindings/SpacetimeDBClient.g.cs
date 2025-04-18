@@ -467,6 +467,7 @@ namespace SpacetimeDB.Types
             {
                 "Add" => BSATNHelpers.Decode<Reducer.Add>(encodedArgs),
                 "Delete" => BSATNHelpers.Decode<Reducer.Delete>(encodedArgs),
+                "ThrowError" => BSATNHelpers.Decode<Reducer.ThrowError>(encodedArgs),
                 var reducer => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
             };
         }
@@ -490,6 +491,7 @@ namespace SpacetimeDB.Types
             {
                 Reducer.Add args => Reducers.InvokeAdd(eventContext, args),
                 Reducer.Delete args => Reducers.InvokeDelete(eventContext, args),
+                Reducer.ThrowError args => Reducers.InvokeThrowError(eventContext, args),
                 _ => throw new ArgumentOutOfRangeException("Reducer", $"Unknown reducer {reducer}")
             };
         }
