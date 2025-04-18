@@ -14,6 +14,7 @@ namespace SpacetimeDB.Types
     {
         internal RemoteReducers(DbConnection conn, SetReducerFlags flags) : base(conn) => SetCallReducerFlags = flags;
         internal readonly SetReducerFlags SetCallReducerFlags;
+        internal event Action<ReducerEventContext, Exception>? InternalOnUnhandledReducerError;
     }
 
     public sealed partial class RemoteTables : RemoteTablesBase
@@ -26,7 +27,10 @@ namespace SpacetimeDB.Types
 
     public sealed partial class SetReducerFlags { }
 
-    public interface IRemoteDbContext : IDbContext<RemoteTables, RemoteReducers, SetReducerFlags, SubscriptionBuilder> { }
+    public interface IRemoteDbContext : IDbContext<RemoteTables, RemoteReducers, SetReducerFlags, SubscriptionBuilder>
+    {
+        public event Action<ReducerEventContext, Exception>? OnUnhandledReducerError;
+    }
 
     public sealed class EventContext : IEventContext, IRemoteDbContext
     {
@@ -88,6 +92,14 @@ namespace SpacetimeDB.Types
         /// Get this connection's <c>ConnectionId</c>.
         /// </summary>
         public ConnectionId ConnectionId => conn.ConnectionId;
+        /// <summary>
+        /// Register a callback to be called when a reducer with no handler returns an error.
+        /// </summary>
+        public event Action<ReducerEventContext, Exception>? OnUnhandledReducerError
+        {
+            add => Reducers.InternalOnUnhandledReducerError += value;
+            remove => Reducers.InternalOnUnhandledReducerError -= value;
+        }
 
         internal EventContext(DbConnection conn, Event<Reducer> Event)
         {
@@ -155,6 +167,14 @@ namespace SpacetimeDB.Types
         /// Get this connection's <c>ConnectionId</c>.
         /// </summary>
         public ConnectionId ConnectionId => conn.ConnectionId;
+        /// <summary>
+        /// Register a callback to be called when a reducer with no handler returns an error.
+        /// </summary>
+        public event Action<ReducerEventContext, Exception>? OnUnhandledReducerError
+        {
+            add => Reducers.InternalOnUnhandledReducerError += value;
+            remove => Reducers.InternalOnUnhandledReducerError -= value;
+        }
 
         internal ReducerEventContext(DbConnection conn, ReducerEvent<Reducer> reducerEvent)
         {
@@ -229,6 +249,14 @@ namespace SpacetimeDB.Types
         /// Get this connection's <c>ConnectionId</c>.
         /// </summary>
         public ConnectionId ConnectionId => conn.ConnectionId;
+        /// <summary>
+        /// Register a callback to be called when a reducer with no handler returns an error.
+        /// </summary>
+        public event Action<ReducerEventContext, Exception>? OnUnhandledReducerError
+        {
+            add => Reducers.InternalOnUnhandledReducerError += value;
+            remove => Reducers.InternalOnUnhandledReducerError -= value;
+        }
 
         internal ErrorContext(DbConnection conn, Exception error)
         {
@@ -292,6 +320,14 @@ namespace SpacetimeDB.Types
         /// Get this connection's <c>ConnectionId</c>.
         /// </summary>
         public ConnectionId ConnectionId => conn.ConnectionId;
+        /// <summary>
+        /// Register a callback to be called when a reducer with no handler returns an error.
+        /// </summary>
+        public event Action<ReducerEventContext, Exception>? OnUnhandledReducerError
+        {
+            add => Reducers.InternalOnUnhandledReducerError += value;
+            remove => Reducers.InternalOnUnhandledReducerError -= value;
+        }
 
         internal SubscriptionEventContext(DbConnection conn)
         {
@@ -459,5 +495,10 @@ namespace SpacetimeDB.Types
         }
 
         public SubscriptionBuilder SubscriptionBuilder() => new(this);
+        public event Action<ReducerEventContext, Exception> OnUnhandledReducerError
+        {
+            add => Reducers.InternalOnUnhandledReducerError += value;
+            remove => Reducers.InternalOnUnhandledReducerError -= value;
+        }
     }
 }
