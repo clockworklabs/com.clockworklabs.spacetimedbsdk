@@ -3,20 +3,30 @@ name: Git tree checks
 on:
   pull_request:
     types: [opened, edited, reopened, synchronize]
-  merge_group:
-permissions: read-all
+
+permissions:
+  pull-requests: write
+  contents: read
 
 jobs:
   check_base_ref:
     name: Release branch restriction
     runs-on: ubuntu-latest
     steps:
-      - id: not_based_on_master
+      - name: Auto-change base to master if needed
         if: |
           github.event_name == 'pull_request' &&
           github.event.pull_request.base.ref == 'release/latest' &&
           ! startsWith(github.event.pull_request.head.ref, 'release/')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo 'Only `release/*` branches are allowed to merge into the release branch `release/latest`.'
-          echo 'Maybe you want to change your PR base to `master`?'
-          exit 1
+          pr_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          repo_full_name="${{ github.repository }}"
+          echo "Updating PR #$pr_number to use base 'master'"
+
+          curl -X PATCH \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/$repo_full_name/pulls/$pr_number \
+            -d '{"base": "master"}'
