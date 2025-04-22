@@ -13,22 +13,20 @@ jobs:
     name: Release branch restriction
     runs-on: ubuntu-latest
     steps:
-      - name: Install GitHub CLI
-        run: |
-          sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key C99B11DEB97541F0
-          sudo apt-add-repository https://cli.github.com/packages
-          sudo apt-get update
-          sudo apt-get install gh -y
-
       - name: Auto-change base to master if needed
         if: |
           github.event_name == 'pull_request' &&
           github.event.pull_request.base.ref == 'release/latest' &&
           ! startsWith(github.event.pull_request.head.ref, 'release/')
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          pr_number="${{ github.event.pull_request.number }}"
-          echo 'Changing base branch of PR '"#$pr_number"' to `master`...'
-          echo 'If you wanted to merge into `release/latest`, make sure your branch starts with `release/`'
-          gh pr edit "$pr_number" --base master
+          pr_number=$(jq --raw-output .pull_request.number "$GITHUB_EVENT_PATH")
+          repo_full_name="${{ github.repository }}"
+          echo "Updating PR #$pr_number to use base 'master'"
+
+          curl -X PATCH \
+            -H "Authorization: Bearer $GITHUB_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/$repo_full_name/pulls/$pr_number \
+            -d '{"base": "master"}'
