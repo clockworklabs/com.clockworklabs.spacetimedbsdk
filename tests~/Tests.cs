@@ -1,3 +1,5 @@
+using System.Diagnostics;
+using CsCheck;
 using SpacetimeDB;
 using SpacetimeDB.BSATN;
 using SpacetimeDB.Types;
@@ -71,5 +73,59 @@ public class Tests
         Assert.True(comparer.Equals(statusFailed, statusFailedByValue));
         Assert.False(comparer.Equals(statusFailed, statusFailedUnequalValue));
         Assert.False(comparer.Equals(statusCommitted, statusOutOfEnergy));
+    }
+
+    [Fact]
+    public static void ListstreamWorks()
+    {
+        // Make sure ListStream behaves like MemoryStream.
+
+        int listLength = 32;
+        Gen.Select(Gen.Byte.List[listLength], Gen.Int[0, 10].SelectMany(n => Gen.Int[0, listLength + 5].List[n].Select(list =>
+        {
+            list.Sort();
+            return list;
+        })), (list, cuts) => (list, cuts)).Sample((listCuts) =>
+        {
+            var (list, cuts) = listCuts;
+            var listStream = new ListStream(list);
+            var memoryStream = new MemoryStream(list.ToArray());
+
+            for (var i = 0; i < cuts.Count - 1; i++)
+            {
+                var start = cuts[i];
+                var end = cuts[i + 1];
+
+                var arr1 = new byte[end - start];
+                Span<byte> span1 = arr1;
+
+                var arr2 = new byte[end - start];
+                Span<byte> span2 = arr2;
+
+                var readList = listStream.Read(span1);
+                var readMemory = memoryStream.Read(span2);
+                Debug.Assert(readList == readMemory);
+                Debug.Assert(span1.SequenceEqual(span2));
+            }
+
+            listStream = new ListStream(list);
+            memoryStream = new MemoryStream(list.ToArray());
+
+            for (var i = 0; i < cuts.Count - 1; i++)
+            {
+                var start = cuts[i];
+                var end = cuts[i + 1];
+                var len = end - start;
+
+                var arr1 = new byte[len + 3];
+                var arr2 = new byte[len + 3];
+
+                // this is a janky way to choose the offset but I don't feel like plumbing in another randomized list
+                var readList = listStream.Read(arr1, len % 3, len);
+                var readMemory = memoryStream.Read(arr2, len % 3, len);
+                Debug.Assert(readList == readMemory);
+                Debug.Assert(arr1.SequenceEqual(arr2));
+            }
+        });
     }
 }

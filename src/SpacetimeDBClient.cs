@@ -11,6 +11,7 @@ using SpacetimeDB.BSATN;
 using SpacetimeDB.Internal;
 using SpacetimeDB.ClientApi;
 using Thread = System.Threading.Thread;
+using System.Diagnostics;
 
 
 namespace SpacetimeDB
