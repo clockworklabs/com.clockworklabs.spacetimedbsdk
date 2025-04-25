@@ -6,7 +6,7 @@ using SpacetimeDB;
 /// <summary>
 /// A stream that reads from an underlying list.
 /// 
-/// Uses two less allocation than converting to a byte array and building a MemoryStream.
+/// Uses one less allocation than converting to a byte array and building a MemoryStream.
 /// </summary>
 internal class ListStream : Stream
 {
