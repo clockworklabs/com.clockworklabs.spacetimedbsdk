@@ -37,10 +37,10 @@ internal class ListStream : Stream
     public override int Read(byte[] buffer, int offset, int count)
     {
         int listPos = pos;
-        int listLength = Math.Min(list.Count, listPos + count);
+        int listEnd = Math.Min(list.Count, listPos + count);
         int bufPos = offset;
         int bufLength = buffer.Length;
-        for (; listPos < listLength && bufPos < bufLength; listPos++, bufPos++)
+        for (; listPos < listEnd && bufPos < bufLength; listPos++, bufPos++)
         {
             buffer[bufPos] = list[listPos];
         }
