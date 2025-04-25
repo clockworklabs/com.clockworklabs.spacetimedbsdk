@@ -5,7 +5,7 @@ using System.IO;
 /// <summary>
 /// A stream that reads from an underlying list.
 /// 
-/// Uses one less allocation than converting to a byte array and building a MemoryStream.
+/// Uses two less allocation than converting to a byte array and building a MemoryStream.
 /// </summary>
 internal class ListStream : Stream
 {

@@ -5,19 +5,10 @@ using SpacetimeDB.Types;
 public class Tests
 {
     [Fact]
-    public static void GenericEqualityComparerCheck()
+    public static void DefaultEqualityComparerCheck()
     {
-        // Validates the behavior of the GenericEqualityComparer's Equals function
-
-        // Byte Arrays
-        byte[] byteArray = new byte[10];
-        byte[] byteArrayByRef = byteArray;
-        byte[] byteArrayByValue = new byte[10];
-        byte[] byteArrayUnequalValue = new byte[01];
-
-        Assert.True(GenericEqualityComparer.Instance.Equals(byteArray, byteArrayByRef));
-        Assert.True(GenericEqualityComparer.Instance.Equals(byteArray, byteArrayByValue));
-        Assert.False(GenericEqualityComparer.Instance.Equals(byteArray, byteArrayUnequalValue));
+        // Sanity check on the behavior of the default EqualityComparer's Equals function w.r.t. spacetime types.
+        var comparer = EqualityComparer<object>.Default;
 
         // Integers
         int integer = 5;
@@ -25,10 +16,10 @@ public class Tests
         int integerUnequalValue = 7;
         string integerAsDifferingType = "5";
 
-        Assert.True(GenericEqualityComparer.Instance.Equals(integer, integerByValue));
-        Assert.False(GenericEqualityComparer.Instance.Equals(integer, integerUnequalValue));
+        Assert.True(comparer.Equals(integer, integerByValue));
+        Assert.False(comparer.Equals(integer, integerUnequalValue));
         // GenericEqualityComparer does not support to converting datatypes and will fail this test
-        Assert.False(GenericEqualityComparer.Instance.Equals(integer, integerAsDifferingType));
+        Assert.False(comparer.Equals(integer, integerAsDifferingType));
 
         // String
         string testString = "This is a test";
@@ -36,9 +27,9 @@ public class Tests
         string testStringByValue = "This is a test";
         string testStringUnequalValue = "This is not the same string";
 
-        Assert.True(GenericEqualityComparer.Instance.Equals(testString, testStringByRef));
-        Assert.True(GenericEqualityComparer.Instance.Equals(testString, testStringByValue));
-        Assert.False(GenericEqualityComparer.Instance.Equals(testString, testStringUnequalValue));
+        Assert.True(comparer.Equals(testString, testStringByRef));
+        Assert.True(comparer.Equals(testString, testStringByValue));
+        Assert.False(comparer.Equals(testString, testStringUnequalValue));
 
         // Note: We are limited to only [SpacetimeDB.Type]
 
@@ -55,15 +46,15 @@ public class Tests
         User testUserUnequalNameValue = new User { Identity = identity, Name = "unequalName", Online = false };
         User testUserUnequalOnlineValue = new User { Identity = identity, Name = "name", Online = true };
 
-        Assert.True(GenericEqualityComparer.Instance.Equals(identity, identityByRef));
-        Assert.True(GenericEqualityComparer.Instance.Equals(identity, identityByValue));
-        Assert.False(GenericEqualityComparer.Instance.Equals(identity, identityUnequalValue));
+        Assert.True(comparer.Equals(identity, identityByRef));
+        Assert.True(comparer.Equals(identity, identityByValue));
+        Assert.False(comparer.Equals(identity, identityUnequalValue));
 
-        Assert.True(GenericEqualityComparer.Instance.Equals(testUser, testUserByRef));
-        Assert.True(GenericEqualityComparer.Instance.Equals(testUser, testUserByValue));
-        Assert.False(GenericEqualityComparer.Instance.Equals(testUser, testUserUnequalIdentityValue));
-        Assert.False(GenericEqualityComparer.Instance.Equals(testUser, testUserUnequalNameValue));
-        Assert.False(GenericEqualityComparer.Instance.Equals(testUser, testUserUnequalOnlineValue));
+        Assert.True(comparer.Equals(testUser, testUserByRef));
+        Assert.True(comparer.Equals(testUser, testUserByValue));
+        Assert.False(comparer.Equals(testUser, testUserUnequalIdentityValue));
+        Assert.False(comparer.Equals(testUser, testUserUnequalNameValue));
+        Assert.False(comparer.Equals(testUser, testUserUnequalOnlineValue));
 
         // TaggedEnum using Status record
         Status statusCommitted = new Status.Committed(default);
@@ -74,11 +65,11 @@ public class Tests
         Status statusFailedUnequalValue = new Status.Failed("unequalFailed");
         Status statusOutOfEnergy = new Status.OutOfEnergy(default);
 
-        Assert.True(GenericEqualityComparer.Instance.Equals(statusCommitted, statusCommittedByRef));
-        Assert.True(GenericEqualityComparer.Instance.Equals(statusCommitted, statusCommittedByValue));
-        Assert.False(GenericEqualityComparer.Instance.Equals(statusCommitted, statusFailed));
-        Assert.True(GenericEqualityComparer.Instance.Equals(statusFailed, statusFailedByValue));
-        Assert.False(GenericEqualityComparer.Instance.Equals(statusFailed, statusFailedUnequalValue));
-        Assert.False(GenericEqualityComparer.Instance.Equals(statusCommitted, statusOutOfEnergy));
+        Assert.True(comparer.Equals(statusCommitted, statusCommittedByRef));
+        Assert.True(comparer.Equals(statusCommitted, statusCommittedByValue));
+        Assert.False(comparer.Equals(statusCommitted, statusFailed));
+        Assert.True(comparer.Equals(statusFailed, statusFailedByValue));
+        Assert.False(comparer.Equals(statusFailed, statusFailedUnequalValue));
+        Assert.False(comparer.Equals(statusCommitted, statusOutOfEnergy));
     }
 }

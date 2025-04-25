@@ -140,7 +140,7 @@ namespace SpacetimeDB
         // We store the BSATN encodings of objects next to their runtime representation.
         // This is memory-inefficient, but allows us to quickly compare objects when seeing if an update is a "real"
         // update or just a multiplicity change.
-        private readonly MultiDictionary<object, IStructuralReadWrite> Entries = new(GenericEqualityComparer.Instance, GenericEqualityComparer.Instance);
+        private readonly MultiDictionary<object, IStructuralReadWrite> Entries = new(EqualityComparer<object>.Default, EqualityComparer<Object>.Default);
 
         // The function to use for decoding a type value.
         IStructuralReadWrite IRemoteTableHandle.DecodeValue(BinaryReader reader) => IStructuralReadWrite.Read<Row>(reader);
@@ -302,37 +302,5 @@ namespace SpacetimeDB
             wasRemoved.Clear();
 
         }
-    }
-
-    /// <summary>
-    /// EqualityComparer used to compare primary keys.
-    /// 
-    /// If the primary keys are byte arrays (i.e. if the table has no primary key), uses Internal.ByteArrayComparer.
-    /// Otherwise, falls back to .Equals().
-    /// 
-    /// TODO: we should test that this works for all of our supported primary key types.
-    /// </summary>
-    internal readonly struct GenericEqualityComparer : IEqualityComparer<object>
-    {
-        public static GenericEqualityComparer Instance = new();
-
-        public new bool Equals(object x, object y)
-        {
-            if (x is byte[] x_ && y is byte[] y_)
-            {
-                return Internal.ByteArrayComparer.Instance.Equals(x_, y_);
-            }
-            return x.Equals(y); // MAKE SURE to use .Equals and not ==... that was a bug.
-        }
-
-        public int GetHashCode(object obj)
-        {
-            if (obj is byte[] obj_)
-            {
-                return Internal.ByteArrayComparer.Instance.GetHashCode(obj_);
-            }
-            return obj.GetHashCode();
-        }
-
     }
 }

@@ -228,9 +228,7 @@ namespace SpacetimeDB
             {
                 if (!Updates.TryGetValue(table, out var delta))
                 {
-                    // Make sure we use GenericEqualityComparer here, since it handles byte[]s and arbitrary primary key types
-                    // correctly.
-                    delta = new MultiDictionaryDelta<object, IStructuralReadWrite>(GenericEqualityComparer.Instance, GenericEqualityComparer.Instance);
+                    delta = new MultiDictionaryDelta<object, IStructuralReadWrite>(EqualityComparer<object>.Default, EqualityComparer<object>.Default);
                     Updates[table] = delta;
                 }
 
