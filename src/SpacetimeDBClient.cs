@@ -264,7 +264,7 @@ namespace SpacetimeDB
         /// If not, the BSATN for the entire row is used instead.
         /// </summary>
         /// <param name="table"></param>
-        /// <param name="bin"></param>
+        /// <param name="reader"></param>
         /// <param name="primaryKey"></param>
         /// <returns></returns>
         static IStructuralReadWrite Decode(IRemoteTableHandle table, BinaryReader reader, out object primaryKey)
