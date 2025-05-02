@@ -114,7 +114,6 @@ namespace SpacetimeDB
         internal QueryId? Subscribe(ISubscriptionHandle handle, string[] querySqls);
         internal void Unsubscribe(QueryId queryId);
         void FrameTick();
-        void LateFrameTick();
         void Disconnect();
 
         internal Task<T[]> RemoteQuery<T>(string query) where T : IStructuralReadWrite, new();
@@ -1042,11 +1041,6 @@ namespace SpacetimeDB
             {
                 OnMessageProcessComplete(preProcessedMessage);
             }
-        }
-
-        public void LateFrameTick()
-        {
-            webSocket.Update();
         }
 
         void IDbConnection.Unsubscribe(QueryId queryId)
