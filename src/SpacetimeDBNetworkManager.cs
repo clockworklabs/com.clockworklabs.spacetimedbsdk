@@ -26,11 +26,6 @@ namespace SpacetimeDB
             }
         }
 
-        public void Start()
-        {
-            StartCoroutine(EndOfFrameTickLoop());
-        }
-
         private readonly List<IDbConnection> activeConnections = new();
 
         public bool AddConnection(IDbConnection conn)
@@ -60,30 +55,6 @@ namespace SpacetimeDB
         }
 
         private void Update() => ForEachConnection(conn => conn.FrameTick());
-
-        /// The idea behind this is:
-        ///
-        /// If there was a response from the DB during the current frame the pre-processing of that response can
-        /// start as early as possible.
-        /// By the time the next frame is processed the result may already be available,
-        /// saving up to one frame of latency.
-        private System.Collections.IEnumerator EndOfFrameTickLoop()
-        {
-            var waitForEndOfFrame = new WaitForEndOfFrame();
-            while (Application.isPlaying)
-            {
-                yield return waitForEndOfFrame;
-
-                // this is called after the current frame is rendered but before the next frame is started
-                // see: https://docs.unity3d.com/6000.0/Documentation/Manual/execution-order.html
-                ForEachConnection(conn => conn.LateFrameTick());
-            }
-        }
-
-        /// <inheritdoc cref="EndOfFrameTickLoop"/>
-        /// This is called after all regular gameplay code has finished but before rendering has occurred.
-        private void LateUpdate() => ForEachConnection(conn => conn.LateFrameTick());
-
         private void OnDestroy() => ForEachConnection(conn => conn.Disconnect());
     }
 }
