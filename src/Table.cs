@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using SpacetimeDB.BSATN;
 using SpacetimeDB.ClientApi;
@@ -50,10 +51,20 @@ namespace SpacetimeDB
     }
 
 
+    /// <summary>
+    /// Base class for views of remote tables.
+    /// </summary>
+    /// <typeparam name="EventContext"></typeparam>
+    /// <typeparam name="Row"></typeparam>
     public abstract class RemoteTableHandle<EventContext, Row> : RemoteBase, IRemoteTableHandle
         where EventContext : class, IEventContext
         where Row : class, IStructuralReadWrite, new()
     {
+        // Note: This should really be also parameterized with RowRW: IReadWrite<Row>, but that is a backwards-
+        // incompatible change. Instead, we call (IReadWrite<Row>)((IStructuralReadWrite)new Row()).GetSerializer().
+        // Serializer.Read is faster than IStructuralReadWrite.Read<Row> since it's manually monomorphized
+        // and therefore avoids using reflection when initializing the row object.
+
         public abstract class IndexBase<Column>
             where Column : IEquatable<Column>
         {
@@ -134,16 +145,14 @@ namespace SpacetimeDB
         // THE DATA IN THE TABLE.
         // The keys of this map are:
         // - Primary keys, if we have them.
-        // - Byte arrays, if we don't.
+        // - The entire row itself, if we don't.
         // But really, the keys are whatever SpacetimeDBClient chooses to give us.
-        //
-        // We store the BSATN encodings of objects next to their runtime representation.
-        // This is memory-inefficient, but allows us to quickly compare objects when seeing if an update is a "real"
-        // update or just a multiplicity change.
         private readonly MultiDictionary<object, IStructuralReadWrite> Entries = new(EqualityComparer<object>.Default, EqualityComparer<Object>.Default);
 
+        private static IReadWrite<Row> Serializer = (IReadWrite<Row>)new Row().GetSerializer();
+
         // The function to use for decoding a type value.
-        IStructuralReadWrite IRemoteTableHandle.DecodeValue(BinaryReader reader) => IStructuralReadWrite.Read<Row>(reader);
+        IStructuralReadWrite IRemoteTableHandle.DecodeValue(BinaryReader reader) => Serializer.Read(reader);
 
         public delegate void RowEventHandler(EventContext context, Row row);
         public event RowEventHandler? OnInsert;
