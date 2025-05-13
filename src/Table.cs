@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using SpacetimeDB.BSATN;
 using SpacetimeDB.ClientApi;
 
+#nullable enable
 namespace SpacetimeDB
 {
     public abstract class RemoteBase
@@ -149,7 +150,28 @@ namespace SpacetimeDB
         // But really, the keys are whatever SpacetimeDBClient chooses to give us.
         private readonly MultiDictionary<object, IStructuralReadWrite> Entries = new(EqualityComparer<object>.Default, EqualityComparer<Object>.Default);
 
-        private static IReadWrite<Row> Serializer = (IReadWrite<Row>)new Row().GetSerializer();
+        private static IReadWrite<Row>? _serializer;
+
+        /// <summary>
+        /// Serializer for the rows of this table.
+        /// </summary>
+        private static IReadWrite<Row> Serializer
+        {
+            get
+            {
+                // We can't just initialize this statically, because some BitCraft row types have static
+                // methods that read SpacetimeDBService.Conn.Db, and these fail if the connection is not
+                // there on the first load of those types (????).
+                // This should really be considered an error on their part, but for now we delay initializing any Rows until
+                // Serializer is actually read, that is, until a row actually needs to be deserialized --
+                // at which point, the connection should be initialized.
+                if (_serializer == null)
+                {
+                    _serializer = (IReadWrite<Row>)new Row().GetSerializer();
+                }
+                return _serializer;
+            }
+        }
 
         // The function to use for decoding a type value.
         IStructuralReadWrite IRemoteTableHandle.DecodeValue(BinaryReader reader) => Serializer.Read(reader);
@@ -313,3 +335,4 @@ namespace SpacetimeDB
         }
     }
 }
+#nullable disable
