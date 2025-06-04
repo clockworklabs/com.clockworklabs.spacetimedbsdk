@@ -120,7 +120,7 @@ namespace SpacetimeDB
 
             var sample = (duration, now, metadata);
 
-            // Two elements of the sorted dictionary are considered equal if they have the same duration and timespan,
+            // Two elements of the sorted dictionary are considered equal if they have the same Duration and End,
             // according to our IComparer.
             // In this case, which seems unlikely, just throw the duplicate out to avoid an error. 
             if (!_requestDurationsSorted.Contains(sample))
