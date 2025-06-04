@@ -152,6 +152,7 @@ namespace SpacetimeDB
         /// <param name="_deprecated">Present for backwards-compatibility, does nothing.</param>
         public ((TimeSpan Duration, string Metadata) Min, (TimeSpan Duration, string Metadata) Max)? GetMinMaxTimes(int _deprecated = 0)
         {
+            CleanUpOldMessages();
             if (!_requestDurationsSorted.Any())
             {
                 return null;
