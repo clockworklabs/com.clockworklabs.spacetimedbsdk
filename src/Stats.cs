@@ -6,7 +6,6 @@ namespace SpacetimeDB
 {
     /// <summary>
     /// Class to track information about network requests and other internal statistics.
-    /// Should only be accessed from the main thread.
     /// </summary>
     public class NetworkRequestTracker
     {
@@ -37,6 +36,9 @@ namespace SpacetimeDB
 
         internal uint StartTrackingRequest(string metadata = "")
         {
+            // This method is called when the user submits a new request.
+            // It's possible the user was naughty and did this off the main thread.
+            // So, be a little paranoid and lock ourselves. Uncontended this will be pretty fast.
             lock (this)
             {
                 // Get a new request ID.
@@ -93,9 +95,12 @@ namespace SpacetimeDB
             InsertRequest(DateTime.UtcNow - start, metadata);
         }
 
-        public ((TimeSpan Duration, string Metadata) Min, (TimeSpan Duration, string Metadata) Max)? GetMinMaxTimes(int lastSeconds)
+        /// <summary>
+        /// Get the the minimum- and maximum-duration events in WINDOW.
+        /// </summary>
+        /// <param name="_deprecated">Present for backwards-compatibility, does nothing.</param>
+        public ((TimeSpan Duration, string Metadata) Min, (TimeSpan Duration, string Metadata) Max)? GetMinMaxTimes(int _deprecated = 0)
         {
-            var cutoff = DateTime.UtcNow.AddSeconds(-lastSeconds);
             if (_requestDurationsSorted.Any())
             {
                 return null;
