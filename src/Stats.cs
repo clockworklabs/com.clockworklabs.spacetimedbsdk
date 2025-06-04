@@ -16,12 +16,12 @@ namespace SpacetimeDB
         public TimeSpan WINDOW = new TimeSpan(0, 0, 5 /* seconds */);
 
         /// <summary>
-        /// Durations of completed requests in the time window.
+        /// Durations of completed requests in the time window, ordered by End.
         /// </summary>
         private readonly Queue<(TimeSpan Duration, DateTime End, string Metadata)> _requestDurations = new();
 
         /// <summary>
-        /// Durations of completed requests in the time window, ordered by duration.
+        /// Durations of completed requests in the time window, ordered by Duration.
         /// </summary>
         private readonly SortedSet<(TimeSpan Duration, DateTime End, string Metadata)> _requestDurationsSorted = new(DurationsSortedComparer.INSTANCE);
 
@@ -110,8 +110,6 @@ namespace SpacetimeDB
             while (_requestDurations.TryPeek(out var front) && front.End < threshold)
             {
                 _requestDurations.Dequeue();
-                // Note: this remove may remove the wrong request if `front` was overwritten by another request.
-                // We don't worry about this, assuming that durations are fine-grained enough to rarely collide.
                 _requestDurationsSorted.Remove(front);
             }
         }
