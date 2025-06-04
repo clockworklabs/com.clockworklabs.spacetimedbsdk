@@ -26,6 +26,15 @@ namespace SpacetimeDB
         private readonly SortedSet<(TimeSpan Duration, DateTime End, string Metadata)> _requestDurationsSorted = new(DurationsSortedComparer.INSTANCE);
 
         /// <summary>
+        /// The fastest request OF ALL TIME.
+        /// We keep data for less time than we used to -- having this around catches outliers that may be problematic.
+        /// </summary>
+        public (TimeSpan Duration, DateTime End, string Metadata)? AllTimeMin
+        {
+            get; private set;
+        }
+
+        /// <summary>
         /// The slowest request OF ALL TIME.
         /// We keep data for less time than we used to -- having this around catches outliers that may be problematic.
         /// </summary>
@@ -33,6 +42,7 @@ namespace SpacetimeDB
         {
             get; private set;
         }
+
 
         private class DurationsSortedComparer : IComparer<(TimeSpan Duration, DateTime End, string Metadata)>
         {
@@ -121,6 +131,10 @@ namespace SpacetimeDB
                 _requestDurationsSorted.Add(sample);
             }
 
+            if (AllTimeMin == null || AllTimeMin.Value.Duration > duration)
+            {
+                AllTimeMin = sample;
+            }
             if (AllTimeMax == null || AllTimeMax.Value.Duration < duration)
             {
                 AllTimeMax = sample;
