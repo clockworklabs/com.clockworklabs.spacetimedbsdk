@@ -13,7 +13,7 @@ namespace SpacetimeDB.EventHandling
                 Listeners[i]?.Invoke();
             }
         }
-        
+
         public void AddListener(Action listener) => Listeners.Add(listener);
 
         public void RemoveListener(Action listener) => Listeners.Remove(listener);
@@ -29,11 +29,11 @@ namespace SpacetimeDB.EventHandling
                 Listeners[i]?.Invoke(value);
             }
         }
-        
+
         public void AddListener(Action<T> listener) => Listeners.Add(listener);
         public void RemoveListener(Action<T> listener) => Listeners.Remove(listener);
     }
-    
+
     internal class AbstractEventHandler<T1, T2>
     {
         private EventListeners<Action<T1, T2>> Listeners { get; } = new();
@@ -45,11 +45,11 @@ namespace SpacetimeDB.EventHandling
                 Listeners[i]?.Invoke(v1, v2);
             }
         }
-        
+
         public void AddListener(Action<T1, T2> listener) => Listeners.Add(listener);
         public void RemoveListener(Action<T1, T2> listener) => Listeners.Remove(listener);
     }
-    
+
     internal class AbstractEventHandler<T1, T2, T3>
     {
         private EventListeners<Action<T1, T2, T3>> Listeners { get; } = new();
@@ -61,11 +61,11 @@ namespace SpacetimeDB.EventHandling
                 Listeners[i]?.Invoke(v1, v2, v3);
             }
         }
-        
+
         public void AddListener(Action<T1, T2, T3> listener) => Listeners.Add(listener);
         public void RemoveListener(Action<T1, T2, T3> listener) => Listeners.Remove(listener);
     }
-    
+
     internal class AbstractEventHandler<T1, T2, T3, T4>
     {
         private EventListeners<Action<T1, T2, T3, T4>> Listeners { get; } = new();
@@ -77,11 +77,11 @@ namespace SpacetimeDB.EventHandling
                 Listeners[i]?.Invoke(v1, v2, v3, v4);
             }
         }
-        
+
         public void AddListener(Action<T1, T2, T3, T4> listener) => Listeners.Add(listener);
         public void RemoveListener(Action<T1, T2, T3, T4> listener) => Listeners.Remove(listener);
     }
-    
+
     internal class AbstractEventHandler<T1, T2, T3, T4, T5>
     {
         private EventListeners<Action<T1, T2, T3, T4, T5>> Listeners { get; } = new();
@@ -93,7 +93,7 @@ namespace SpacetimeDB.EventHandling
                 Listeners[i]?.Invoke(v1, v2, v3, v4, v5);
             }
         }
-        
+
         public void AddListener(Action<T1, T2, T3, T4, T5> listener) => Listeners.Add(listener);
         public void RemoveListener(Action<T1, T2, T3, T4, T5> listener) => Listeners.Remove(listener);
     }

@@ -189,17 +189,20 @@ namespace SpacetimeDB
 
         public delegate void RowEventHandler(EventContext context, Row row);
         private CustomRowEventHandler OnInsertHandler { get; } = new();
-        public event RowEventHandler OnInsert {
+        public event RowEventHandler OnInsert
+        {
             add => OnInsertHandler.AddListener(value);
             remove => OnInsertHandler.RemoveListener(value);
         }
         private CustomRowEventHandler OnDeleteHandler { get; } = new();
-        public event RowEventHandler OnDelete {
+        public event RowEventHandler OnDelete
+        {
             add => OnDeleteHandler.AddListener(value);
             remove => OnDeleteHandler.RemoveListener(value);
         }
         private CustomRowEventHandler OnBeforeDeleteHandler { get; } = new();
-        public event RowEventHandler OnBeforeDelete {
+        public event RowEventHandler OnBeforeDelete
+        {
             add => OnBeforeDeleteHandler.AddListener(value);
             remove => OnBeforeDeleteHandler.RemoveListener(value);
         }
@@ -361,7 +364,7 @@ namespace SpacetimeDB
             wasRemoved.Clear();
 
         }
-        
+
         private class CustomRowEventHandler
         {
             private EventListeners<RowEventHandler> Listeners { get; } = new();
@@ -373,7 +376,7 @@ namespace SpacetimeDB
                     Listeners[i]?.Invoke(ctx, row);
                 }
             }
-        
+
             public void AddListener(RowEventHandler listener) => Listeners.Add(listener);
             public void RemoveListener(RowEventHandler listener) => Listeners.Remove(listener);
         }
@@ -388,7 +391,7 @@ namespace SpacetimeDB
                     Listeners[i]?.Invoke(ctx, oldRow, newRow);
                 }
             }
-        
+
             public void AddListener(UpdateEventHandler listener) => Listeners.Add(listener);
             public void RemoveListener(UpdateEventHandler listener) => Listeners.Remove(listener);
         }
