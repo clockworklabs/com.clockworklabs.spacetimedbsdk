@@ -9,13 +9,9 @@ namespace SpacetimeDB
     /// </summary>
     public class NetworkRequestTracker
     {
-        /// <summary>
-        /// Keep this many seconds of network request data.
-        /// You can update this value to change the policy for this tracker.
-        /// </summary>
-        public TimeSpan Window = new TimeSpan(0, 0, 5 /* seconds */);
-
-        public DateTime LastReset = DateTime.UtcNow;
+        public NetworkRequestTracker()
+        {
+        }
 
         /// <summary>
         /// The fastest request OF ALL TIME.
@@ -35,15 +31,84 @@ namespace SpacetimeDB
             get; private set;
         }
 
-        // The min and max for the previous window.
-        private int LastWindowSamples = 0;
-        private (TimeSpan Duration, string Metadata)? LastWindowMin;
-        private (TimeSpan Duration, string Metadata)? LastWindowMax;
+        private int _totalSamples = 0;
 
-        // The min and max for the current window.
-        private int ThisWindowSamples = 0;
-        private (TimeSpan Duration, string Metadata)? ThisWindowMin;
-        private (TimeSpan Duration, string Metadata)? ThisWindowMax;
+        /// <summary>
+        /// The maximum number of windows we are willing to track data in.
+        /// </summary>
+        public static readonly int MAX_TRACKERS = 16;
+
+        /// <summary>
+        /// A tracker that tracks the minimum and maximum sample in a time window,
+        /// resetting after <c>windowSeconds</c> seconds.
+        /// </summary>
+        private struct Tracker
+        {
+            public Tracker(int windowSeconds)
+            {
+                LastReset = DateTime.UtcNow;
+                Window = new TimeSpan(0, 0, windowSeconds);
+                LastWindowMin = null;
+                LastWindowMax = null;
+                ThisWindowMin = null;
+                ThisWindowMax = null;
+            }
+
+            private DateTime LastReset;
+            private TimeSpan Window;
+
+            // The min and max for the previous window.
+            private (TimeSpan Duration, string Metadata)? LastWindowMin;
+            private (TimeSpan Duration, string Metadata)? LastWindowMax;
+
+            // The min and max for the current window.
+            private (TimeSpan Duration, string Metadata)? ThisWindowMin;
+            private (TimeSpan Duration, string Metadata)? ThisWindowMax;
+
+            public void InsertRequest(TimeSpan duration, string metadata)
+            {
+                var sample = (duration, metadata);
+
+                if (ThisWindowMin == null || ThisWindowMin.Value.Duration > duration)
+                {
+                    ThisWindowMin = sample;
+                }
+                if (ThisWindowMax == null || ThisWindowMax.Value.Duration < duration)
+                {
+                    ThisWindowMax = sample;
+                }
+
+                if (LastReset < DateTime.UtcNow - Window)
+                {
+                    LastReset = DateTime.UtcNow;
+                    LastWindowMax = ThisWindowMax;
+                    LastWindowMin = ThisWindowMin;
+                    ThisWindowMax = null;
+                    ThisWindowMin = null;
+                }
+            }
+
+            public ((TimeSpan Duration, string Metadata) Min, (TimeSpan Duration, string Metadata) Max)? GetMinMaxTimes()
+            {
+                if (LastWindowMin != null && LastWindowMax != null)
+                {
+                    return (LastWindowMin.Value, LastWindowMax.Value);
+                }
+
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Maps (requested window time in seconds) -> (the tracker for that time window).
+        /// </summary>
+        private readonly Dictionary<int, Tracker> Trackers = new();
+
+        /// <summary>
+        /// To allow modifying Trackers in a loop.
+        /// This is needed because we made Tracker a struct.
+        /// </summary>
+        private readonly HashSet<int> TrackerWindows = new();
 
         /// <summary>
         /// ID for the next in-flight request.
@@ -106,25 +171,13 @@ namespace SpacetimeDB
             {
                 AllTimeMax = sample;
             }
-            if (ThisWindowMin == null || AllTimeMin.Value.Duration > duration)
-            {
-                ThisWindowMin = sample;
-            }
-            if (ThisWindowMax == null || AllTimeMax.Value.Duration < duration)
-            {
-                ThisWindowMax = sample;
-            }
-            ThisWindowSamples += 1;
+            _totalSamples += 1;
 
-            if (LastReset < DateTime.UtcNow - Window)
+            foreach (var window in TrackerWindows)
             {
-                LastReset = DateTime.UtcNow;
-                LastWindowMax = ThisWindowMax;
-                LastWindowMin = ThisWindowMin;
-                LastWindowSamples = ThisWindowSamples;
-                ThisWindowMax = null;
-                ThisWindowMin = null;
-                ThisWindowSamples = 0;
+                var tracker = Trackers[window];
+                tracker.InsertRequest(duration, metadata);
+                Trackers[window] = tracker; // Needed because struct.
             }
         }
 
@@ -134,26 +187,38 @@ namespace SpacetimeDB
         }
 
         /// <summary>
-        /// Get the the minimum- and maximum-duration events in NetworkRequestTracker.WINDOW.
+        /// Get the the minimum- and maximum-duration events in lastSeconds.
+        /// When first called, this will return null until `lastSeconds` have passed.
+        /// After this, the value will update every `lastSeconds`.
+        /// 
+        /// This class allocates an internal data structure for every distinct value of `lastSeconds` passed.
+        /// After `NetworkRequestTracker.MAX_TRACKERS` distinct values have been passed, it will stop allocating internal data structures
+        /// and always return null.
+        /// This should be fine as long as you don't request a large number of distinct windows.
         /// </summary>
         /// <param name="_deprecated">Present for backwards-compatibility, does nothing.</param>
-        public ((TimeSpan Duration, string Metadata) Min, (TimeSpan Duration, string Metadata) Max)? GetMinMaxTimes(int _deprecated = 0)
+        public ((TimeSpan Duration, string Metadata) Min, (TimeSpan Duration, string Metadata) Max)? GetMinMaxTimes(int lastSeconds = 0)
         {
-            if (LastWindowMin != null && LastWindowMax != null)
+            if (lastSeconds <= 0) return null;
+
+            if (Trackers.TryGetValue(lastSeconds, out var tracker))
             {
-                return (LastWindowMin.Value, LastWindowMax.Value);
+                return tracker.GetMinMaxTimes();
             }
-            else
+            else if (TrackerWindows.Count < MAX_TRACKERS)
             {
-                return null;
+                TrackerWindows.Add(lastSeconds);
+                Trackers.Add(lastSeconds, new Tracker(lastSeconds));
             }
+
+            return null;
         }
 
         /// <summary>
         /// Get the number of samples in the window.
         /// </summary>
         /// <returns></returns>
-        public int GetSampleCount() => LastWindowSamples;
+        public int GetSampleCount() => _totalSamples;
 
         /// <summary>
         /// Get the number of outstanding tracked requests.
