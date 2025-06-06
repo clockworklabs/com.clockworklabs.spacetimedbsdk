@@ -13,23 +13,15 @@ namespace SpacetimeDB
         /// Keep this many seconds of network request data.
         /// You can update this value to change the policy for this tracker.
         /// </summary>
-        public TimeSpan WINDOW = new TimeSpan(0, 0, 5 /* seconds */);
+        public TimeSpan Window = new TimeSpan(0, 0, 5 /* seconds */);
 
-        /// <summary>
-        /// Durations of completed requests in the time window, ordered by End.
-        /// </summary>
-        private readonly Queue<(TimeSpan Duration, DateTime End, string Metadata)> _requestDurations = new();
-
-        /// <summary>
-        /// Durations of completed requests in the time window, ordered by Duration.
-        /// </summary>
-        private readonly SortedSet<(TimeSpan Duration, DateTime End, string Metadata)> _requestDurationsSorted = new(DurationsSortedComparer.INSTANCE);
+        public DateTime LastReset = DateTime.UtcNow;
 
         /// <summary>
         /// The fastest request OF ALL TIME.
         /// We keep data for less time than we used to -- having this around catches outliers that may be problematic.
         /// </summary>
-        public (TimeSpan Duration, DateTime End, string Metadata)? AllTimeMin
+        public (TimeSpan Duration, string Metadata)? AllTimeMin
         {
             get; private set;
         }
@@ -38,22 +30,20 @@ namespace SpacetimeDB
         /// The slowest request OF ALL TIME.
         /// We keep data for less time than we used to -- having this around catches outliers that may be problematic.
         /// </summary>
-        public (TimeSpan Duration, DateTime End, string Metadata)? AllTimeMax
+        public (TimeSpan Duration, string Metadata)? AllTimeMax
         {
             get; private set;
         }
 
+        // The min and max for the previous window.
+        private int LastWindowSamples = 0;
+        private (TimeSpan Duration, string Metadata)? LastWindowMin;
+        private (TimeSpan Duration, string Metadata)? LastWindowMax;
 
-        private class DurationsSortedComparer : IComparer<(TimeSpan Duration, DateTime End, string Metadata)>
-        {
-            public static DurationsSortedComparer INSTANCE = new();
-            public int Compare((TimeSpan Duration, DateTime End, string Metadata) x, (TimeSpan Duration, DateTime End, string Metadata) y)
-            {
-                var result = x.Duration.CompareTo(y.Duration);
-                if (result != 0) return result;
-                return x.End.CompareTo(y.End);
-            }
-        }
+        // The min and max for the current window.
+        private int ThisWindowSamples = 0;
+        private (TimeSpan Duration, string Metadata)? ThisWindowMin;
+        private (TimeSpan Duration, string Metadata)? ThisWindowMax;
 
         /// <summary>
         /// ID for the next in-flight request.
@@ -104,30 +94,9 @@ namespace SpacetimeDB
             return true;
         }
 
-        private void CleanUpOldMessages()
-        {
-            var threshold = DateTime.UtcNow - WINDOW;
-            while (_requestDurations.TryPeek(out var front) && front.End < threshold)
-            {
-                _requestDurations.Dequeue();
-                _requestDurationsSorted.Remove(front);
-            }
-        }
-
         internal void InsertRequest(TimeSpan duration, string metadata)
         {
-            var now = DateTime.UtcNow;
-
-            var sample = (duration, now, metadata);
-
-            // Two elements of the sorted dictionary are considered equal if they have the same Duration and End,
-            // according to our IComparer.
-            // In this case, which seems unlikely, just throw the duplicate out to avoid an error. 
-            if (!_requestDurationsSorted.Contains(sample))
-            {
-                _requestDurations.Enqueue(sample);
-                _requestDurationsSorted.Add(sample);
-            }
+            var sample = (duration, metadata);
 
             if (AllTimeMin == null || AllTimeMin.Value.Duration > duration)
             {
@@ -137,8 +106,26 @@ namespace SpacetimeDB
             {
                 AllTimeMax = sample;
             }
+            if (ThisWindowMin == null || AllTimeMin.Value.Duration > duration)
+            {
+                ThisWindowMin = sample;
+            }
+            if (ThisWindowMax == null || AllTimeMax.Value.Duration < duration)
+            {
+                ThisWindowMax = sample;
+            }
+            ThisWindowSamples += 1;
 
-            CleanUpOldMessages();
+            if (LastReset < DateTime.UtcNow - Window)
+            {
+                LastReset = DateTime.UtcNow;
+                LastWindowMax = ThisWindowMax;
+                LastWindowMin = ThisWindowMin;
+                LastWindowSamples = ThisWindowSamples;
+                ThisWindowMax = null;
+                ThisWindowMin = null;
+                ThisWindowSamples = 0;
+            }
         }
 
         internal void InsertRequest(DateTime start, string metadata)
@@ -152,24 +139,21 @@ namespace SpacetimeDB
         /// <param name="_deprecated">Present for backwards-compatibility, does nothing.</param>
         public ((TimeSpan Duration, string Metadata) Min, (TimeSpan Duration, string Metadata) Max)? GetMinMaxTimes(int _deprecated = 0)
         {
-            CleanUpOldMessages();
-            if (!_requestDurationsSorted.Any())
+            if (LastWindowMin != null && LastWindowMax != null)
+            {
+                return (LastWindowMin.Value, LastWindowMax.Value);
+            }
+            else
             {
                 return null;
             }
-            // Note: this is not LINQ Min, it's SortedSet Min, which is O(1).
-            var min = _requestDurationsSorted.Min;
-            // Similarly here.
-            var max = _requestDurationsSorted.Max;
-
-            return ((min.Duration, min.Metadata), (max.Duration, max.Metadata));
         }
 
         /// <summary>
         /// Get the number of samples in the window.
         /// </summary>
         /// <returns></returns>
-        public int GetSampleCount() => _requestDurations.Count;
+        public int GetSampleCount() => LastWindowSamples;
 
         /// <summary>
         /// Get the number of outstanding tracked requests.
