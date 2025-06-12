@@ -525,6 +525,9 @@
     },
     ParseMessageTracker: {
       sampleCount: 10
+    },
+    ApplyMessageTracker: {
+      sampleCount: 11
     }
   }
 }

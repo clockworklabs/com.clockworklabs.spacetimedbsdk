@@ -137,47 +137,51 @@ namespace SpacetimeDB
             }
         }
 
-        // The remaining methods in this class do not need to lock, since they are only called from OnProcessMessageComplete.
-
         internal bool FinishTrackingRequest(uint requestId)
         {
-            if (!_requests.Remove(requestId, out var entry))
+            lock (this)
             {
-                // TODO: When we implement requestId json support for SpacetimeDB this shouldn't happen anymore!
-                // var minKey = _requests.Keys.Min();
-                // entry = _requests[minKey];
-                //
-                // if (!_requests.Remove(minKey))
-                // {
-                //     return false;
-                // }
-                return false;
-            }
+                if (!_requests.Remove(requestId, out var entry))
+                {
+                    // TODO: When we implement requestId json support for SpacetimeDB this shouldn't happen anymore!
+                    // var minKey = _requests.Keys.Min();
+                    // entry = _requests[minKey];
+                    //
+                    // if (!_requests.Remove(minKey))
+                    // {
+                    //     return false;
+                    // }
+                    return false;
+                }
 
-            // Calculate the duration and add it to the queue
-            InsertRequest(entry.Start, entry.Metadata);
-            return true;
+                // Calculate the duration and add it to the queue
+                InsertRequest(entry.Start, entry.Metadata);
+                return true;
+            }
         }
 
         internal void InsertRequest(TimeSpan duration, string metadata)
         {
-            var sample = (duration, metadata);
+            lock (this)
+            {
+                var sample = (duration, metadata);
 
-            if (AllTimeMin == null || AllTimeMin.Value.Duration > duration)
-            {
-                AllTimeMin = sample;
-            }
-            if (AllTimeMax == null || AllTimeMax.Value.Duration < duration)
-            {
-                AllTimeMax = sample;
-            }
-            _totalSamples += 1;
+                if (AllTimeMin == null || AllTimeMin.Value.Duration > duration)
+                {
+                    AllTimeMin = sample;
+                }
+                if (AllTimeMax == null || AllTimeMax.Value.Duration < duration)
+                {
+                    AllTimeMax = sample;
+                }
+                _totalSamples += 1;
 
-            foreach (var window in TrackerWindows)
-            {
-                var tracker = Trackers[window];
-                tracker.InsertRequest(duration, metadata);
-                Trackers[window] = tracker; // Needed because struct.
+                foreach (var window in TrackerWindows)
+                {
+                    var tracker = Trackers[window];
+                    tracker.InsertRequest(duration, metadata);
+                    Trackers[window] = tracker; // Needed because struct.
+                }
             }
         }
 
@@ -199,16 +203,19 @@ namespace SpacetimeDB
         /// <param name="_deprecated">Present for backwards-compatibility, does nothing.</param>
         public ((TimeSpan Duration, string Metadata) Min, (TimeSpan Duration, string Metadata) Max)? GetMinMaxTimes(int lastSeconds = 0)
         {
-            if (lastSeconds <= 0) return null;
+            lock (this)
+            {
+                if (lastSeconds <= 0) return null;
 
-            if (Trackers.TryGetValue(lastSeconds, out var tracker))
-            {
-                return tracker.GetMinMaxTimes();
-            }
-            else if (TrackerWindows.Count < MAX_TRACKERS)
-            {
-                TrackerWindows.Add(lastSeconds);
-                Trackers.Add(lastSeconds, new Tracker(lastSeconds));
+                if (Trackers.TryGetValue(lastSeconds, out var tracker))
+                {
+                    return tracker.GetMinMaxTimes();
+                }
+                else if (TrackerWindows.Count < MAX_TRACKERS)
+                {
+                    TrackerWindows.Add(lastSeconds);
+                    Trackers.Add(lastSeconds, new Tracker(lastSeconds));
+                }
             }
 
             return null;
@@ -234,5 +241,6 @@ namespace SpacetimeDB
         public readonly NetworkRequestTracker SubscriptionRequestTracker = new();
         public readonly NetworkRequestTracker AllReducersTracker = new();
         public readonly NetworkRequestTracker ParseMessageTracker = new();
+        public readonly NetworkRequestTracker ApplyMessageTracker = new();
     }
 }

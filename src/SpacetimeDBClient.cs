@@ -241,7 +241,8 @@ namespace SpacetimeDB
         {
             public ServerMessage message;
             public ProcessedDatabaseUpdate dbOps;
-            public DateTime timestamp;
+            public DateTime receiveTimestamp;
+            public uint processTracker;
             public ReducerEvent<Reducer>? reducerEvent;
         }
 
@@ -575,20 +576,24 @@ namespace SpacetimeDB
                 {
                     case ServerMessage.InitialSubscription(var initSub):
                         dbOps = PreProcessLegacySubscription(initSub);
+                        stats.ParseMessageTracker.InsertRequest(unprocessed.timestamp, $"type={nameof(ServerMessage.InitialSubscription)}");
                         break;
                     case ServerMessage.SubscribeApplied(var subscribeApplied):
                         break;
                     case ServerMessage.SubscribeMultiApplied(var subscribeMultiApplied):
                         dbOps = PreProcessSubscribeMultiApplied(subscribeMultiApplied);
+                        stats.ParseMessageTracker.InsertRequest(unprocessed.timestamp, $"type={nameof(ServerMessage.SubscribeMultiApplied)}");
                         break;
                     case ServerMessage.SubscriptionError(var subscriptionError):
                         // do nothing; main thread will warn.
+                        stats.ParseMessageTracker.InsertRequest(unprocessed.timestamp, $"type={nameof(ServerMessage.SubscriptionError)}");
                         break;
                     case ServerMessage.UnsubscribeApplied(var unsubscribeApplied):
                         // do nothing; main thread will warn.
                         break;
                     case ServerMessage.UnsubscribeMultiApplied(var unsubscribeMultiApplied):
                         dbOps = PreProcessUnsubscribeMultiApplied(unsubscribeMultiApplied);
+                        stats.ParseMessageTracker.InsertRequest(unprocessed.timestamp, $"type={nameof(ServerMessage.UnsubscribeMultiApplied)}");
                         break;
                     case ServerMessage.TransactionUpdate(var transactionUpdate):
                         // Convert the generic event arguments in to a domain specific event object
@@ -619,9 +624,11 @@ namespace SpacetimeDB
                         {
                             dbOps = PreProcessDatabaseUpdate(committed);
                         }
+                        stats.ParseMessageTracker.InsertRequest(unprocessed.timestamp, $"type={nameof(ServerMessage.TransactionUpdate)},reducer={transactionUpdate.ReducerCall.ReducerName}");
                         break;
                     case ServerMessage.TransactionUpdateLight(var update):
                         dbOps = PreProcessDatabaseUpdate(update.Update);
+                        stats.ParseMessageTracker.InsertRequest(unprocessed.timestamp, $"type={nameof(ServerMessage.TransactionUpdateLight)}");
                         break;
                     case ServerMessage.IdentityToken(var identityToken):
                         break;
@@ -633,7 +640,9 @@ namespace SpacetimeDB
                         throw new InvalidOperationException();
                 }
 
-                return new ProcessedMessage { message = message, dbOps = dbOps, timestamp = unprocessed.timestamp, reducerEvent = reducerEvent };
+                var processTracker = stats.ApplyMessageTracker.StartTrackingRequest($"type={message.GetType().Name}");
+
+                return new ProcessedMessage { message = message, dbOps = dbOps, receiveTimestamp = unprocessed.timestamp, processTracker = processTracker, reducerEvent = reducerEvent };
             }
         }
 
@@ -728,13 +737,12 @@ namespace SpacetimeDB
         {
             var message = processed.message;
             var dbOps = processed.dbOps;
-            var timestamp = processed.timestamp;
+            var timestamp = processed.receiveTimestamp;
 
             switch (message)
             {
                 case ServerMessage.InitialSubscription(var initialSubscription):
                     {
-                        stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.InitialSubscription)}");
                         stats.SubscriptionRequestTracker.FinishTrackingRequest(initialSubscription.RequestId);
                         var eventContext = MakeSubscriptionEventContext();
                         var legacyEventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
@@ -760,7 +768,6 @@ namespace SpacetimeDB
 
                 case ServerMessage.SubscribeMultiApplied(var subscribeMultiApplied):
                     {
-                        stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.SubscribeApplied)}");
                         stats.SubscriptionRequestTracker.FinishTrackingRequest(subscribeMultiApplied.RequestId);
                         var eventContext = MakeSubscriptionEventContext();
                         var legacyEventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
@@ -783,7 +790,6 @@ namespace SpacetimeDB
                 case ServerMessage.SubscriptionError(var subscriptionError):
                     {
                         Log.Warn($"Subscription Error: ${subscriptionError.Error}");
-                        stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.SubscriptionError)}");
                         if (subscriptionError.RequestId.HasValue)
                         {
                             stats.SubscriptionRequestTracker.FinishTrackingRequest(subscriptionError.RequestId.Value);
@@ -822,7 +828,6 @@ namespace SpacetimeDB
 
                 case ServerMessage.UnsubscribeMultiApplied(var unsubscribeMultiApplied):
                     {
-                        stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.UnsubscribeApplied)}");
                         stats.SubscriptionRequestTracker.FinishTrackingRequest(unsubscribeMultiApplied.RequestId);
                         var eventContext = MakeSubscriptionEventContext();
                         var legacyEventContext = ToEventContext(new Event<Reducer>.UnsubscribeApplied());
@@ -843,8 +848,6 @@ namespace SpacetimeDB
 
                 case ServerMessage.TransactionUpdateLight(var update):
                     {
-                        stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.TransactionUpdateLight)}");
-
                         var eventContext = ToEventContext(new Event<Reducer>.UnknownTransaction());
                         OnMessageProcessCompleteUpdate(eventContext, dbOps);
 
@@ -854,7 +857,6 @@ namespace SpacetimeDB
                 case ServerMessage.TransactionUpdate(var transactionUpdate):
                     {
                         var reducer = transactionUpdate.ReducerCall.ReducerName;
-                        stats.ParseMessageTracker.InsertRequest(timestamp, $"type={nameof(ServerMessage.TransactionUpdate)},reducer={reducer}");
                         var hostDuration = (TimeSpan)transactionUpdate.TotalHostExecutionDuration;
                         stats.AllReducersTracker.InsertRequest(hostDuration, $"reducer={reducer}");
                         var callerIdentity = transactionUpdate.CallerIdentity;
@@ -902,6 +904,8 @@ namespace SpacetimeDB
                 default:
                     throw new InvalidOperationException();
             }
+
+            stats.ApplyMessageTracker.FinishTrackingRequest(processed.processTracker);
         }
 
         // Note: this method is called from unit tests.
