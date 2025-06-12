@@ -236,11 +236,41 @@ namespace SpacetimeDB
 
     public class Stats
     {
+        /// <summary>
+        /// Tracks times from reducers requests being sent to their responses being received.
+        /// This is clientside time, not host-time: for that you want AllReducersTracker.
+        /// Includes the time needed to parse the outer layer of the response message, but not the inner layer
+        /// if it includes a DatabaseUpdate.
+        /// </summary>
         public readonly NetworkRequestTracker ReducerRequestTracker = new();
+
+        /// <summary>
+        /// Tracks times from one-off requests being sent to their responses being received.
+        /// </summary>
         public readonly NetworkRequestTracker OneOffRequestTracker = new();
+
+        /// <summary>
+        /// Tracks times from subscriptions being sent to their responses being received.
+        /// Includes the time needed to parse the outer layer of the response message, but not the inner layer
+        /// if it includes a DatabaseUpdate.
+        /// </summary>
         public readonly NetworkRequestTracker SubscriptionRequestTracker = new();
+
+        /// <summary>
+        /// Tracks HOST-SIDE execution times for reducers.
+        /// </summary>
         public readonly NetworkRequestTracker AllReducersTracker = new();
+
+        /// <summary>
+        /// Tracks times from messages being received on the wire to their being fully parsed,
+        /// but not applied.
+        /// Includes time waiting in the pre-parsing queue.
+        /// </summary>
         public readonly NetworkRequestTracker ParseMessageTracker = new();
+
+        /// <summary>
+        /// Tracks times from messages being parsed on a background thread to their being applied on the main thread.
+        /// </summary>
         public readonly NetworkRequestTracker ApplyMessageTracker = new();
     }
 }

@@ -242,7 +242,7 @@ namespace SpacetimeDB
             public ServerMessage message;
             public ProcessedDatabaseUpdate dbOps;
             public DateTime receiveTimestamp;
-            public uint processTracker;
+            public uint applyTracker;
             public ReducerEvent<Reducer>? reducerEvent;
         }
 
@@ -575,12 +575,14 @@ namespace SpacetimeDB
                 switch (message)
                 {
                     case ServerMessage.InitialSubscription(var initSub):
+                        stats.SubscriptionRequestTracker.FinishTrackingRequest(initSub.RequestId);
                         dbOps = PreProcessLegacySubscription(initSub);
                         stats.ParseMessageTracker.InsertRequest(unprocessed.timestamp, $"type={nameof(ServerMessage.InitialSubscription)}");
                         break;
                     case ServerMessage.SubscribeApplied(var subscribeApplied):
                         break;
                     case ServerMessage.SubscribeMultiApplied(var subscribeMultiApplied):
+                        stats.SubscriptionRequestTracker.FinishTrackingRequest(subscribeMultiApplied.RequestId);
                         dbOps = PreProcessSubscribeMultiApplied(subscribeMultiApplied);
                         stats.ParseMessageTracker.InsertRequest(unprocessed.timestamp, $"type={nameof(ServerMessage.SubscribeMultiApplied)}");
                         break;
@@ -597,6 +599,10 @@ namespace SpacetimeDB
                         break;
                     case ServerMessage.TransactionUpdate(var transactionUpdate):
                         // Convert the generic event arguments in to a domain specific event object
+                        var reducer = transactionUpdate.ReducerCall.ReducerName;
+                        var hostDuration = (TimeSpan)transactionUpdate.TotalHostExecutionDuration;
+                        stats.AllReducersTracker.InsertRequest(hostDuration, $"reducer={reducer}");
+
                         try
                         {
                             reducerEvent = new(
@@ -620,11 +626,24 @@ namespace SpacetimeDB
                             // See OnProcessMessageComplete.
                         }
 
+                        var callerIdentity = transactionUpdate.CallerIdentity;
+                        if (callerIdentity == Identity && transactionUpdate.CallerConnectionId == ConnectionId)
+                        {
+                            // This was a request that we initiated
+                            var requestId = transactionUpdate.ReducerCall.RequestId;
+                            if (!stats.ReducerRequestTracker.FinishTrackingRequest(requestId))
+                            {
+                                Log.Warn($"Failed to finish tracking reducer request: {requestId}");
+                            }
+                        }
+
                         if (transactionUpdate.Status is UpdateStatus.Committed(var committed))
                         {
                             dbOps = PreProcessDatabaseUpdate(committed);
                         }
-                        stats.ParseMessageTracker.InsertRequest(unprocessed.timestamp, $"type={nameof(ServerMessage.TransactionUpdate)},reducer={transactionUpdate.ReducerCall.ReducerName}");
+
+                        stats.ParseMessageTracker.InsertRequest(unprocessed.timestamp, $"type={nameof(ServerMessage.TransactionUpdate)},reducer={reducer}");
+
                         break;
                     case ServerMessage.TransactionUpdateLight(var update):
                         dbOps = PreProcessDatabaseUpdate(update.Update);
@@ -640,9 +659,9 @@ namespace SpacetimeDB
                         throw new InvalidOperationException();
                 }
 
-                var processTracker = stats.ApplyMessageTracker.StartTrackingRequest($"type={message.GetType().Name}");
+                var applyTracker = stats.ApplyMessageTracker.StartTrackingRequest($"type={message.GetType().Name}");
 
-                return new ProcessedMessage { message = message, dbOps = dbOps, receiveTimestamp = unprocessed.timestamp, processTracker = processTracker, reducerEvent = reducerEvent };
+                return new ProcessedMessage { message = message, dbOps = dbOps, receiveTimestamp = unprocessed.timestamp, applyTracker = applyTracker, reducerEvent = reducerEvent };
             }
         }
 
@@ -743,7 +762,6 @@ namespace SpacetimeDB
             {
                 case ServerMessage.InitialSubscription(var initialSubscription):
                     {
-                        stats.SubscriptionRequestTracker.FinishTrackingRequest(initialSubscription.RequestId);
                         var eventContext = MakeSubscriptionEventContext();
                         var legacyEventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
                         OnMessageProcessCompleteUpdate(legacyEventContext, dbOps);
@@ -768,7 +786,6 @@ namespace SpacetimeDB
 
                 case ServerMessage.SubscribeMultiApplied(var subscribeMultiApplied):
                     {
-                        stats.SubscriptionRequestTracker.FinishTrackingRequest(subscribeMultiApplied.RequestId);
                         var eventContext = MakeSubscriptionEventContext();
                         var legacyEventContext = ToEventContext(new Event<Reducer>.SubscribeApplied());
                         OnMessageProcessCompleteUpdate(legacyEventContext, dbOps);
@@ -856,20 +873,6 @@ namespace SpacetimeDB
 
                 case ServerMessage.TransactionUpdate(var transactionUpdate):
                     {
-                        var reducer = transactionUpdate.ReducerCall.ReducerName;
-                        var hostDuration = (TimeSpan)transactionUpdate.TotalHostExecutionDuration;
-                        stats.AllReducersTracker.InsertRequest(hostDuration, $"reducer={reducer}");
-                        var callerIdentity = transactionUpdate.CallerIdentity;
-                        if (callerIdentity == Identity && transactionUpdate.CallerConnectionId == ConnectionId)
-                        {
-                            // This was a request that we initiated
-                            var requestId = transactionUpdate.ReducerCall.RequestId;
-                            if (!stats.ReducerRequestTracker.FinishTrackingRequest(requestId))
-                            {
-                                Log.Warn($"Failed to finish tracking reducer request: {requestId}");
-                            }
-                        }
-
                         if (processed.reducerEvent is { } reducerEvent)
                         {
                             var legacyEventContext = ToEventContext(new Event<Reducer>.Reducer(reducerEvent));
@@ -905,7 +908,7 @@ namespace SpacetimeDB
                     throw new InvalidOperationException();
             }
 
-            stats.ApplyMessageTracker.FinishTrackingRequest(processed.processTracker);
+            stats.ApplyMessageTracker.FinishTrackingRequest(processed.applyTracker);
         }
 
         // Note: this method is called from unit tests.
