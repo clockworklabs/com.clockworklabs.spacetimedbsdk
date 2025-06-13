@@ -136,25 +136,40 @@ namespace SpacetimeDB
             }
         }
 
-        internal bool FinishTrackingRequest(uint requestId)
+        /// <summary>
+        /// Finish tracking a request. Assume the request finished processing now.
+        /// </summary>
+        /// <param name="requestId">The ID of the request.</param>
+        /// <param name="metadata">The metadata for the request, if we should override the existing metadata.</param>
+        /// <returns></returns>
+
+        internal bool FinishTrackingRequest(uint requestId, string? metadata = null)
+        {
+            return FinishTrackingRequest(requestId, DateTime.UtcNow, metadata);
+        }
+
+        /// <summary>
+        /// Finish tracking a request.
+        /// </summary>
+        /// <param name="requestId">The ID of the request.</param>
+        /// <param name="finished">The time we should consider the request as having finished.</param>
+        /// <param name="metadata">The metadata for the request, if we should override the existing metadata.</param>
+        /// <returns></returns>
+        internal bool FinishTrackingRequest(uint requestId, DateTime finished, string? metadata = null)
         {
             lock (this)
             {
                 if (!_requests.Remove(requestId, out var entry))
                 {
-                    // TODO: When we implement requestId json support for SpacetimeDB this shouldn't happen anymore!
-                    // var minKey = _requests.Keys.Min();
-                    // entry = _requests[minKey];
-                    //
-                    // if (!_requests.Remove(minKey))
-                    // {
-                    //     return false;
-                    // }
                     return false;
+                }
+                if (metadata != null)
+                {
+                    entry.Metadata = metadata;
                 }
 
                 // Calculate the duration and add it to the queue
-                InsertRequest(entry.Start, entry.Metadata);
+                InsertRequest(finished - entry.Start, entry.Metadata);
                 return true;
             }
         }
@@ -237,42 +252,60 @@ namespace SpacetimeDB
     {
         /// <summary>
         /// Tracks times from reducers requests being sent to their responses being received.
-        /// Includes: network send + host + receive + wait in pre-process queue + outer parse.
+        /// Includes: network send + host + network receive time.
         /// 
-        /// (That is, includes the time needed to parse the outer layer of the response message, but not the inner layer
-        /// if it includes a DatabaseUpdate.)
+        /// GetRequestsAwaitingResponse() is meaningful here.
         /// </summary>
         public readonly NetworkRequestTracker ReducerRequestTracker = new();
 
         /// <summary>
-        /// Tracks times from one-off requests being sent to their responses being received.
-        /// Includes: network send + host + receive + parse + queue times.
-        /// </summary>
-        public readonly NetworkRequestTracker OneOffRequestTracker = new();
-
-        /// <summary>
         /// Tracks times from subscriptions being sent to their responses being received.
-        /// Includes the time needed to parse the outer layer of the response message, but not the inner layer
-        /// if it includes a DatabaseUpdate.
+        /// Includes: network send + host + network receive time.
+        /// 
+        /// GetRequestsAwaitingResponse() is meaningful here.
         /// </summary>
         public readonly NetworkRequestTracker SubscriptionRequestTracker = new();
 
         /// <summary>
+        /// Tracks times from one-off requests being sent to their responses being received.
+        /// Includes: network send + host + receive + parse + queue times.
+        /// 
+        /// GetRequestsAwaitingResponse() is meaningful here.
+        /// </summary>
+        public readonly NetworkRequestTracker OneOffRequestTracker = new();
+
+        /// <summary>
         /// Tracks host-side execution times for reducers.
-        /// Includes: host.
+        /// Includes: host-side execution time.
         /// </summary>
         public readonly NetworkRequestTracker AllReducersTracker = new();
 
         /// <summary>
         /// Tracks times from messages being received on the wire to their being fully parsed,
         /// but not applied.
-        /// Includes: time waiting in preprocessing queue + parse time.
+        /// Includes: time waiting in pre-parsing queue.
+        /// 
+        /// GetRequestsAwaitingResponse() is meaningful here.
+        /// </summary>
+        public readonly NetworkRequestTracker ParseMessageQueueTracker = new();
+
+        /// <summary>
+        /// Tracks times from messages being received on the wire to their being fully parsed,
+        /// but not applied.
+        /// Includes: parse time (on background thread).
         /// </summary>
         public readonly NetworkRequestTracker ParseMessageTracker = new();
 
         /// <summary>
         /// Tracks times from messages being parsed on a background thread to their being applied on the main thread.
-        /// Includes: time waiting in pre-application queue + apply time.
+        /// Includes: time waiting in pre-application queue.
+        /// GetRequestsAwaitingResponse() is meaningful here.
+        /// </summary>
+        public readonly NetworkRequestTracker ApplyMessageQueueTracker = new();
+
+        /// <summary>
+        /// Tracks times from messages being parsed on a background thread to their being applied on the main thread.
+        /// Includes: apply time (on main thread).
         /// </summary>
         public readonly NetworkRequestTracker ApplyMessageTracker = new();
     }
