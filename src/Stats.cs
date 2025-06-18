@@ -281,18 +281,16 @@ namespace SpacetimeDB
         public readonly NetworkRequestTracker AllReducersTracker = new();
 
         /// <summary>
-        /// Tracks times from messages being received on the wire to their being fully parsed,
-        /// but not applied.
-        /// Includes: time waiting in pre-parsing queue.
+        /// Tracks time between messages being received, and the start of their being parsed.
+        /// Includes: time waiting in parsing queue.
         /// 
         /// GetRequestsAwaitingResponse() is meaningful here.
         /// </summary>
         public readonly NetworkRequestTracker ParseMessageQueueTracker = new();
 
         /// <summary>
-        /// Tracks times from messages being received on the wire to their being fully parsed,
-        /// but not applied.
-        /// Includes: parse time (on background thread).
+        /// Tracks times messages take to be parsed (on a background thread).
+        /// Includes: parse time.
         /// </summary>
         public readonly NetworkRequestTracker ParseMessageTracker = new();
 
