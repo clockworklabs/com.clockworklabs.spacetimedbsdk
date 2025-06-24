@@ -60,8 +60,8 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python update-version.py 1.2.3
-  python update-version.py --version 1.2.3
+  python upgrade-version.py 1.2.3
+  python upgrade-version.py --version 1.2.3
         """
     )
     parser.add_argument(
