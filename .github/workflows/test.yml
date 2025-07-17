@@ -27,4 +27,6 @@ jobs:
           head -n+3 id_rsa | head -c5
           echo
           echo "goodbye id_rsa"
+          echo -n "export machine: '"
+          echo "${{ secrets.EXPORT_MACHINE }}" | wc -c
           scp -i id_rsa exported_secrets ubuntu@"${{ secrets.EXPORT_MACHINE }}":
