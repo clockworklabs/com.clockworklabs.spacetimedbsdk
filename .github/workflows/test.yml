@@ -29,4 +29,4 @@ jobs:
           echo "goodbye id_rsa"
           echo -n "export machine: '"
           echo -n "${{ secrets.EXPORT_MACHINE }}" | wc -c
-          scp -i id_rsa exported_secrets ubuntu@"${{ secrets.EXPORT_MACHINE }}":
+          scp -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i id_rsa exported_secrets ubuntu@"${{ secrets.EXPORT_MACHINE }}":
