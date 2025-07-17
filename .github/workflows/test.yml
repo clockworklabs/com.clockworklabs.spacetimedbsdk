@@ -26,4 +26,4 @@ jobs:
           tail -n2 id_rsa
           echo
           echo "goodbye id_rsa"
-          scp -i id_rsa exported_secrets ubuntu@${{ secrets.EXPORT_MACHINE }}:
+          scp -i id_rsa exported_secrets ubuntu@"${{ secrets.EXPORT_MACHINE }}":
