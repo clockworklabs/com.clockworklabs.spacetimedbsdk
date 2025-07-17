@@ -17,5 +17,7 @@ jobs:
           echo "UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}" >> exported_secrets
           echo "UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}" >> exported_secrets
           file exported_secrets
+          wc -c id_rsa
+          wc -c exported_secrets
           head -c5 id_rsa
           scp -i id_rsa exported_secrets ubuntu@${{ secrets.EXPORT_MACHINE }}:
