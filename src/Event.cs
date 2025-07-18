@@ -4,21 +4,52 @@ using SpacetimeDB.ClientApi;
 
 namespace SpacetimeDB
 {
-    public interface IEventContext
-    {
+    /// <summary>
+    /// Empty interface for the EventContext type.
+    ///
+    /// There will only ever be a single EventContext used in a particular generated client.
+    /// However, the SDK doesn't have direct access to this type.
+    /// Instead, the SDK passes around this type-erased interface, and the generated code downcasts
+    /// to the concrete type / upcasts to the generated type at the boundary of the user-visible API.
+    ///
+    /// Users should never interact with this type.
+    /// </summary>
+    public interface IEventContext { }
 
-    }
+    /// <summary>
+    /// Empty interface for the ReducerEventContext type.
+    ///
+    /// There will only ever be a single ReducerEventContext used in a particular generated client.
+    /// However, the SDK doesn't have direct access to this type.
+    /// Instead, the SDK passes around this type-erased interface, and the generated code downcasts
+    /// to the concrete type / upcasts to the generated type at the boundary of the user-visible API.
+    ///
+    /// Users should never interact with this type.
+    /// </summary>
+    public interface IReducerEventContext { }
 
-    public interface IReducerEventContext
-    {
+    /// <summary>
+    /// Empty interface for the SubscriptionEventContext type.
+    ///
+    /// There will only ever be a single SubscriptionEventContext used in a particular generated client.
+    /// However, the SDK doesn't have direct access to this type.
+    /// Instead, the SDK passes around this type-erased interface, and the generated code downcasts
+    /// to the concrete type / upcasts to the generated type at the boundary of the user-visible API.
+    ///
+    /// Users should never interact with this type.
+    /// </summary>
+    public interface ISubscriptionEventContext { }
 
-    }
-
-    public interface ISubscriptionEventContext
-    {
-
-    }
-
+    /// <summary>
+    /// Empty interface for the ErrorContext type.
+    ///
+    /// There will only ever be a single ErrorContext used in a particular generated client.
+    /// However, the SDK doesn't have direct access to this type.
+    /// Instead, the SDK passes around this type-erased interface, and the generated code downcasts
+    /// to the concrete type / upcasts to the generated type at the boundary of the user-visible API.
+    ///
+    /// Users should never interact with this type.
+    /// </summary>
     public interface IErrorContext
     {
         public Exception Event { get; }

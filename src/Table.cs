@@ -22,6 +22,17 @@ namespace SpacetimeDB
         }
     }
 
+    /// <summary>
+    /// Interface implemented by all tables.
+    /// All operations in DbConnection use `IRemoteTableHandle` rather than a concrete type.
+    ///
+    /// Note that this interface does not know about the type of rows of the table, since `DbConnection`
+    /// needs to handle a variable number of tables of unknown type. C#'s type system isn't fancy enough for that,
+    /// so we just erase types. In general, arguments to the methods here that take erased types should downcast immediately.
+    /// 
+    /// Tables don't implement a special GetHashCode -- they use identity hashing -- so you can cheaply
+    /// use them as keys in hash maps.
+    /// </summary>
     public interface IRemoteTableHandle
     {
         internal object? GetPrimaryKey(IStructuralReadWrite row);
