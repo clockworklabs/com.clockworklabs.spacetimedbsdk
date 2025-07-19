@@ -175,10 +175,6 @@ namespace SpacetimeDB
             {
                 Ws.Options.SetRequestHeader("Authorization", $"Bearer {auth}");
             }
-            else
-            {
-                Ws.Options.UseDefaultCredentials = true;
-            }
 
             try
             {
