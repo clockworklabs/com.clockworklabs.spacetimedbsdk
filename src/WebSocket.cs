@@ -75,6 +75,9 @@ namespace SpacetimeDB
     );
 
     [DllImport("__Internal")]
+    private static extern void WebSocket_Generate_Token(string host, string uri, string authToken, IntPtr callbackPtr);
+
+    [DllImport("__Internal")]
     private static extern int WebSocket_Connect(string uri, string protocol, string authToken);
 
     [DllImport("__Internal")]
@@ -118,8 +121,16 @@ namespace SpacetimeDB
         Instance?.HandleWebGLError(socketId);
     }
 
+    [AOT.MonoPInvokeCallback(typeof(Action<IntPtr>))]
+    private static void OnTokenReceived(IntPtr uriPtr)
+    {
+        string newUri = Marshal.PtrToStringUTF8(uriPtr);
+        Instance?._tokenTcs.TrySetResult(newUri);
+    }
+
     private static WebSocket Instance;
     private int _webglSocketId = -1;
+    private TaskCompletionSource<string> _tokenTcs;
 
     private void InitializeWebGL()
     {
@@ -144,6 +155,13 @@ namespace SpacetimeDB
             {
                 var uri = $"{host}/v1/database/{nameOrAddress}/subscribe?connection_id={connectionId}&compression={compression}";
                 if (light) uri += "&light=true";
+                if (!string.IsNullOrEmpty(auth))
+                {
+                    _tokenTcs = new TaskCompletionSource<string>();
+                    var callbackPtr = Marshal.GetFunctionPointerForDelegate((Action<IntPtr>)OnTokenReceived);
+                    WebSocket_Generate_Token(host, uri, auth, callbackPtr);
+                    uri = await _tokenTcs.Task;
+                }
         
                 _webglSocketId = WebSocket_Connect(uri, _options.Protocol, auth);
                 if (_webglSocketId == -1)

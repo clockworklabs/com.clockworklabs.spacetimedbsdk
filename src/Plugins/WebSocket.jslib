@@ -18,6 +18,46 @@ mergeInto(LibraryManager.library, {
         manager.callbacks.error = errorCallback;
     },
 
+    WebSocket_Generate_Token: function(baseUriPtr, uriPtr, authTokenPtr, callbackPtr) {
+        try {
+            var host = UTF8ToString(baseUriPtr);
+            var uri = UTF8ToString(uriPtr);
+            var authToken = UTF8ToString(authTokenPtr);
+            var tokenUrl = new URL('v1/identity/websocket-token', host);
+            tokenUrl.protocol = host.startsWith("wss://") ? 'https:' : 'http:';
+            var headers = new Headers();
+            headers.set('Authorization', `Bearer ${authToken}`);
+            
+            fetch(tokenUrl, {
+                method: 'POST',
+                headers: headers
+            })
+            .then((response) => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    return Promise.reject(
+                        new Error(`Failed to verify token: ${response.statusText}`)
+                    );
+                }
+            })
+            .then(({token}) => {
+                if (token) {
+                    uri += `&token=${token}`;
+                }
+                var uriPtrNew = stringToNewUTF8(uri);
+                dynCall('vi', callbackPtr, [uriPtrNew]);
+            })
+            .catch((error) => {
+                var uriPtrNew = stringToNewUTF8(uri);
+                dynCall('vi', callbackPtr, [uriPtrNew]);
+                console.error("Failed to get temporary token", error);
+            })
+        } catch (e) {
+            console.error("Failed to get temporary token", e);
+        }
+    },
+
     WebSocket_Connect: function(uriPtr, protocolPtr, authTokenPtr) {
         try {
             var manager = this._webSocketManager;
