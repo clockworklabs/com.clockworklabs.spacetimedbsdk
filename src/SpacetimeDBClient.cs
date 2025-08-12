@@ -910,6 +910,18 @@ namespace SpacetimeDB
                         {
                             var legacyEventContext = ToEventContext(new Event<Reducer>.UnknownTransaction());
                             ApplyUpdate(legacyEventContext, dbOps);
+
+                            if (transactionUpdate.Status is UpdateStatus.Failed(string err))
+                            {
+                                var fiReducers = GetType().GetField("Reducers", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance);
+                                var reducers = fiReducers.GetValue(this);
+                                var fiEvent = reducers.GetType().GetField("InternalOnUnhandledReducerError", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                                var unhandledErrorEvent = fiEvent.GetValue(reducers) as Delegate;
+                                if (unhandledErrorEvent != null)
+                                {
+                                    unhandledErrorEvent.DynamicInvoke(null, new Exception(err));
+                                }
+                            }
                         }
                         break;
                     }
