@@ -19,8 +19,6 @@
     <AssemblyVersion>1.12.0</AssemblyVersion>
     <Version>1.12.0</Version>
     <DefaultItemExcludes>$(DefaultItemExcludes);*~/**</DefaultItemExcludes>
-    <!-- We want to save DLLs for Unity which doesn't support NuGet. -->
-    <RestorePackagesPath>packages</RestorePackagesPath>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
 
