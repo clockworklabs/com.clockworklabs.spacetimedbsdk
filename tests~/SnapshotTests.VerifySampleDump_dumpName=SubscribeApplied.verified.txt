@@ -1,0 +1,483 @@
+﻿{
+  Events: {
+    Log: SpacetimeDBClient: Connecting to wss://spacetimedb.com example,
+    OnConnect: {
+      identity: Identity_1,
+      token: eyJ0eXAiOiJKV1QiLCJhbGciOiJFUzI1NiJ9.eyJoZXhfaWRlbnRpdHkiOiJjMjAwNDgzMTUyZDY0MmM3ZDQwMmRlMDZjYWNjMzZkY2IwYzJhMWYyYmJlYjhlN2Q1YTY3M2YyNDM1Y2NhOTc1Iiwic3ViIjoiNmQ0YjU0MzAtMDBjZi00YTk5LTkzMmMtYWQyZDA3YmFiODQxIiwiaXNzIjoibG9jYWxob3N0IiwiYXVkIjpbInNwYWNldGltZWRiIl0sImlhdCI6MTczNzY2NTc2OSwiZXhwIjpudWxsfQ.GaKhvswWYW6wpPpK70_-Tw8DKjKJ2qnidwwj1fTUf3mctcsm_UusPYSws_pSW3qGnMNnGjEXt7rRNvGvuWf9ow
+    },
+    OnInsertUser: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.SubscribeApplied
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      user: {
+        identity: Identity_1,
+        online: true
+      }
+    },
+    OnInsertUser: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.Transaction
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      user: {
+        identity: Identity_2,
+        online: true
+      }
+    },
+    OnInsertUser: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.Transaction
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      user: {
+        identity: Identity_3,
+        online: true
+      }
+    },
+    OnUpdateUser: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.Reducer,
+          ReducerEvent: {
+            Timestamp: 1718487768057579,
+            Status: {
+              $type: Status.Committed
+            },
+            CallerIdentity: Identity_1,
+            CallerConnectionId: Guid_1,
+            Reducer: {
+              $type: Reducer.SetName,
+              name: A
+            }
+          }
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      oldUser: {
+        identity: Identity_1,
+        online: true
+      },
+      newUser: {
+        identity: Identity_1,
+        name: A,
+        online: true
+      }
+    },
+    OnSetName: {
+      eventContext: {
+        Event: {
+          Timestamp: 1718487768057579,
+          Status: {
+            $type: Status.Committed
+          },
+          CallerIdentity: Identity_1,
+          CallerConnectionId: Guid_1,
+          Reducer: {
+            $type: Reducer.SetName,
+            name: A
+          }
+        },
+        Db: {
+          Message: {
+            Count: 4
+          },
+          User: {
+            Identity: {},
+            Count: 3
+          }
+        },
+        Reducers: {},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      name: A
+    },
+    OnSetName: {
+      eventContext: {
+        Event: {
+          Timestamp: 1718487770000000,
+          Status: {
+            $type: Status.Failed,
+            Failed_: name cannot be empty
+          },
+          CallerIdentity: Identity_1,
+          CallerConnectionId: Guid_1,
+          Reducer: {
+            $type: Reducer.SetName,
+            name: 
+          }
+        },
+        Db: {
+          Message: {
+            Count: 4
+          },
+          User: {
+            Identity: {},
+            Count: 3
+          }
+        },
+        Reducers: {},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      name: 
+    },
+    OnUpdateUser: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.Transaction
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      oldUser: {
+        identity: Identity_3,
+        online: true
+      },
+      newUser: {
+        identity: Identity_3,
+        name: B,
+        online: true
+      }
+    },
+    OnInsertMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.Transaction
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_3,
+        sent: 1718487775346381,
+        text: Hello, A!
+      }
+    },
+    OnInsertMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.Transaction
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_1,
+        sent: 1718487783175083,
+        text: Hello, B!
+      }
+    },
+    OnInsertMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.Transaction
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_3,
+        sent: 1718487787645364,
+        text: Goodbye!
+      }
+    },
+    OnUpdateUser: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.Transaction
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      oldUser: {
+        identity: Identity_3,
+        name: B,
+        online: true
+      },
+      newUser: {
+        identity: Identity_3,
+        name: B,
+        online: false
+      }
+    },
+    OnInsertMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.Transaction
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_1,
+        sent: 1718487794937841,
+        text: Goodbye!
+      }
+    },
+    OnDeleteMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.UnsubscribeApplied
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_3,
+        sent: 1718487775346381,
+        text: Hello, A!
+      }
+    },
+    OnDeleteMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.UnsubscribeApplied
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_1,
+        sent: 1718487783175083,
+        text: Hello, B!
+      }
+    },
+    OnDeleteMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.UnsubscribeApplied
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_3,
+        sent: 1718487787645364,
+        text: Goodbye!
+      }
+    },
+    OnDeleteMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.UnsubscribeApplied
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_1,
+        sent: 1718487794937841,
+        text: Goodbye!
+      }
+    },
+    LogWarning: Subscription Error: $bad query dude,
+    LogWarning: Received SubscriptionError for unknown query_set_id=4,
+    OnInsertMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.SubscribeApplied
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_3,
+        sent: 1718487775346381,
+        text: Hello, A!
+      }
+    },
+    OnInsertMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.SubscribeApplied
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_1,
+        sent: 1718487783175083,
+        text: Hello, B!
+      }
+    },
+    OnInsertMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.SubscribeApplied
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_3,
+        sent: 1718487787645364,
+        text: Goodbye!
+      }
+    },
+    OnInsertMessage: {
+      eventContext: {
+        Event: {
+          $type: Event<Reducer>.SubscribeApplied
+        },
+        Db: {Scrubbed},
+        Reducers: {Scrubbed},
+        Procedures: {},
+        IsActive: false,
+        Identity: Identity_1,
+        ConnectionId: Guid_1
+      },
+      message: {
+        sender: Identity_1,
+        sent: 1718487794937841,
+        text: Goodbye!
+      }
+    }
+  },
+  FinalSnapshot: {
+    User: [
+      {
+        identity: Identity_1,
+        name: A,
+        online: true
+      },
+      {
+        identity: Identity_2,
+        online: true
+      },
+      {
+        identity: Identity_3,
+        name: B,
+        online: false
+      }
+    ],
+    Message: [
+      {
+        sender: Identity_1,
+        sent: 1718487794937841,
+        text: Goodbye!
+      },
+      {
+        sender: Identity_3,
+        sent: 1718487787645364,
+        text: Goodbye!
+      },
+      {
+        sender: Identity_1,
+        sent: 1718487783175083,
+        text: Hello, B!
+      },
+      {
+        sender: Identity_3,
+        sent: 1718487775346381,
+        text: Hello, A!
+      }
+    ]
+  },
+  Stats: {
+    ReducerRequestTracker: {
+      sampleCount: 2
+    },
+    ProcedureRequestTracker: {},
+    SubscriptionRequestTracker: {
+      sampleCount: 5
+    },
+    OneOffRequestTracker: {},
+    AllReducersTracker: {},
+    ParseMessageQueueTracker: {
+      sampleCount: 17
+    },
+    ParseMessageTracker: {
+      sampleCount: 17
+    },
+    ApplyMessageQueueTracker: {
+      sampleCount: 17
+    },
+    ApplyMessageTracker: {
+      sampleCount: 17
+    }
+  }
+}
